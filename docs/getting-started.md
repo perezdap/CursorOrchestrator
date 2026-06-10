@@ -34,18 +34,33 @@ Without an API key you can still validate workflows and run with `--dry-run`.
 
 ## Initialize a project
 
-From any repository where you want to run workflows:
+From the **repository root** (not from inside `.orchestrator/`):
 
 ```powershell
 orchestrator init
 ```
 
-This creates:
+Creates:
 
 ```text
-.orchestrator/config.yaml
+.orchestrator/
+  config.yaml       # Defaults for this repo
+  README.md         # Layout and next steps
 workflows/
-.runs/          # gitignored run output
+  generic-task.workflow.yaml
+  winget-psadt-package.workflow.yaml
+.runs/              # Run artifacts (gitignore recommended)
+```
+
+Validate and run the starter workflow:
+
+```powershell
+orchestrator validate --workflow .\workflows\generic-task.workflow.yaml
+
+orchestrator run `
+  --workflow .\workflows\generic-task.workflow.yaml `
+  --task "Your task" `
+  --repo-path .
 ```
 
 ## Validate an example workflow

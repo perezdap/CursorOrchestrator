@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { builtInAgentDefinitions } from "./agents/index.js";
+import { formatInitSummary, initProject } from "./init/initProject.js";
 import { Orchestrator } from "./orchestrator/Orchestrator.js";
 import { ConsoleRunProgress, noopRunProgress } from "./orchestrator/RunProgress.js";
 import { RunState } from "./orchestrator/RunState.js";
@@ -150,32 +151,8 @@ program
   .command("init")
   .description("Initialize orchestrator config in the current directory")
   .action(() => {
-    const configDir = join(process.cwd(), ".orchestrator");
-    mkdirSync(configDir, { recursive: true });
-
-    const configPath = join(configDir, "config.yaml");
-    if (!existsSync(configPath)) {
-      writeFileSync(
-        configPath,
-        [
-          "# Cursor Orchestrator configuration",
-          "defaultExecutionMode: local",
-          "runsDirectory: .runs",
-          "",
-          "# Set CURSOR_API_KEY in your environment for Cursor SDK runners",
-        ].join("\n"),
-        "utf-8",
-      );
-    }
-
-    mkdirSync(join(process.cwd(), "workflows"), { recursive: true });
-    mkdirSync(join(process.cwd(), ".runs"), { recursive: true });
-
-    console.log("Initialized .orchestrator/config.yaml");
-    console.log("Created workflows/ and .runs/ directories");
-    console.log("\nNext steps:");
-    console.log("  orchestrator validate --workflow .\\src\\examples\\generic-task.workflow.yaml");
-    console.log('  orchestrator run --workflow .\\src\\examples\\generic-task.workflow.yaml --task "Your task"');
+    const result = initProject(process.cwd(), import.meta.url);
+    console.log(formatInitSummary(result));
   });
 
 program.parseAsync(process.argv).catch((err: unknown) => {

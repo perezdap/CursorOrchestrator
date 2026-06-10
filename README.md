@@ -35,7 +35,9 @@ npx orchestrator init
 orchestrator init
 ```
 
-Creates `.orchestrator/config.yaml`, `workflows/`, and `.runs/`.
+Creates `.orchestrator/config.yaml`, `.orchestrator/README.md`, `workflows/` (with starter templates), and `.runs/`.
+
+Run from the **repository root**, not from inside `.orchestrator/`.
 
 ## Run a workflow
 
