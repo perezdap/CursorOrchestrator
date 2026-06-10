@@ -7,4 +7,5 @@ export const refactorerAgent: AgentTypeModule = {
 Document changes in refactor-summary.md.`,
   inputs: ["plan.md", "review.md"],
   outputs: ["refactor-summary.md"],
+  defaultSkills: ["refactorer", "surgical-changes"],
 };

@@ -7,6 +7,7 @@ export interface AgentTypeModule {
   allowedTools?: string[];
   inputs?: string[];
   outputs?: string[];
+  defaultSkills?: string[];
 }
 
 export function toAgentDefinition(module: AgentTypeModule): AgentDefinition {
@@ -18,6 +19,7 @@ export function toAgentDefinition(module: AgentTypeModule): AgentDefinition {
     allowedTools: module.allowedTools,
     inputs: module.inputs,
     outputs: module.outputs,
+    skills: module.defaultSkills,
     defaultInstructions: module.defaultInstructions,
   };
 }

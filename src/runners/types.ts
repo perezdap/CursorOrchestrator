@@ -1,4 +1,5 @@
 import type { AgentConfig, ExecutionMode } from "../schemas/agent.schema.js";
+import type { ResolvedSkill } from "../skills/SkillResolver.js";
 
 export interface AgentRunInput {
   agentId: string;
@@ -11,6 +12,7 @@ export interface AgentRunInput {
   artifactsDir: string;
   context?: Record<string, string>;
   apiKey?: string;
+  skills?: ResolvedSkill[];
 }
 
 export interface AgentRunResult {

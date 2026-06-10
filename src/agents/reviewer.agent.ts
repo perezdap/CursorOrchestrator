@@ -7,4 +7,5 @@ export const reviewerAgent: AgentTypeModule = {
 Write review.md with findings categorized as blocking, warning, or suggestion.`,
   inputs: ["plan.md", "implementation-summary.md"],
   outputs: ["review.md"],
+  defaultSkills: ["reviewer", "review-checklist"],
 };

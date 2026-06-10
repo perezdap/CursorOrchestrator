@@ -8,4 +8,5 @@ Produce a plan.md with numbered steps and an acceptance.md with verifiable crite
 Be explicit about Windows-first tooling (PowerShell, Pester, winget, PSADT) when relevant.`,
   inputs: ["task", "repoPath"],
   outputs: ["plan.md", "acceptance.md"],
+  defaultSkills: ["planner", "plan-structure", "windows-first"],
 };

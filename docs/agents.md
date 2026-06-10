@@ -40,6 +40,36 @@ agents:
 
 Workflow `instructions` override built-in defaults. Other fields fall back to the type module.
 
+## Default skills
+
+Each agent type has bundled **skills** under `skills/<id>/SKILL.md` at the package root. Skills are procedure docs (outputs, checklists, constraints) injected into the agent prompt by `composeAgentPrompt`.
+
+Merge order:
+
+1. Agent type `defaultSkills` in `src/agents/*.agent.ts`
+2. Workflow `agents.<id>.skills`
+3. Phase `skills` for that step only
+
+```yaml
+agents:
+  implementer:
+    type: implementer
+    model: auto
+    instructions: |
+      Make the requested changes.
+    skills:
+      - tdd   # workflow-only skill id (workspace or bundled)
+
+phases:
+  - id: verify
+    agent: verifier
+    objective: Run checks.
+    skills:
+      - run-smoke-tests
+```
+
+Workflow validation checks skill ids against bundled skills and, when `workspaceRoot` is provided, against `<repo>/.cursor/skills/<id>/SKILL.md`.
+
 ## Adding a new agent type
 
 1. Create `src/agents/my-type.agent.ts`:
@@ -51,11 +81,13 @@ export const myTypeAgent: AgentTypeModule = {
   type: "my-type", // extend agentTypeSchema enum first
   defaultInstructions: "You are a specialist for ...",
   outputs: ["result.md"],
+  defaultSkills: ["my-type"],
 };
 ```
 
 2. Add the type to `agentTypeSchema` in `src/schemas/agent.schema.ts`
 3. Export from `src/agents/index.ts` and add to `builtInAgentModules`
+4. Add `skills/my-type/SKILL.md` for the default procedure doc
 
 No orchestrator changes required.
 

@@ -23,8 +23,10 @@ Live agent runs require `CURSOR_API_KEY`. Use `--dry-run` or `MockAgentRunner` w
 ## Repository layout
 
 ```text
+skills/             # Bundled role and shared SKILL.md files (injected into prompts)
 src/
   agents/           # Built-in agent type modules (planner, implementer, …)
+  skills/           # SkillResolver, mergeSkillIds (loads skills/ at package root)
   cli.ts            # orchestrator CLI entry point
   index.ts          # Public library exports
   orchestrator/     # Orchestrator, PhaseRunner, TaskGraph, RunState, …

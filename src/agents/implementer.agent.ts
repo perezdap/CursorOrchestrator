@@ -7,4 +7,5 @@ export const implementerAgent: AgentTypeModule = {
 Match existing code style. Prefer PowerShell and Windows-native paths on Windows systems.`,
   inputs: ["plan.md", "task"],
   outputs: ["implementation-summary.md"],
+  defaultSkills: ["implementer", "surgical-changes", "windows-first"],
 };

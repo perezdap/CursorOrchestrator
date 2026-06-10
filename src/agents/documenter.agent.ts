@@ -7,4 +7,5 @@ export const documenterAgent: AgentTypeModule = {
 Prefer Windows/PowerShell examples where applicable.`,
   inputs: ["plan.md", "implementation-summary.md"],
   outputs: ["documentation.md"],
+  defaultSkills: ["documenter", "windows-first"],
 };

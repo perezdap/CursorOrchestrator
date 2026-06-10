@@ -32,6 +32,37 @@ describe("composeAgentPrompt", () => {
     expect(prompt).toContain("task: Add tests");
     expect(prompt).toContain("Artifacts directory:");
   });
+
+  it("includes resolved skills in the prompt", () => {
+    const input: AgentRunInput = {
+      agentId: "planner",
+      agentConfig: {
+        type: "planner",
+        model: "auto",
+        instructions: "Plan the work.",
+      },
+      prompt: "Understand the task.",
+      cwd: "C:\\repo",
+      executionMode: "local",
+      runId: "run-1",
+      phaseId: "intake",
+      artifactsDir: "C:\\repo\\.runs\\run-1\\artifacts",
+      skills: [
+        {
+          id: "planner",
+          name: "planner",
+          body: "Write plan.md and acceptance.md.",
+          source: "framework",
+        },
+      ],
+    };
+
+    const prompt = composeAgentPrompt(input);
+
+    expect(prompt).toContain("## Skills");
+    expect(prompt).toContain("### planner");
+    expect(prompt).toContain("Write plan.md and acceptance.md.");
+  });
 });
 
 describe("buildPhasePromptBody", () => {
