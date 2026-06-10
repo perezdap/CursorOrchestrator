@@ -1,4 +1,6 @@
 export { Orchestrator, type OrchestratorOptions, type RunWorkflowInput, type RunWorkflowResult } from "./orchestrator/Orchestrator.js";
+export { Run, type RunContext, type RunOptions } from "./orchestrator/Run.js";
+export { PhaseExecutor, type PhaseExecutionResult, type PhaseExecutionMeta } from "./orchestrator/PhaseExecutor.js";
 export { AgentRegistry } from "./orchestrator/AgentRegistry.js";
 export { TaskGraph } from "./orchestrator/TaskGraph.js";
 export { PhaseRunner } from "./orchestrator/PhaseRunner.js";
@@ -74,3 +76,12 @@ export { builtInAgentDefinitions, builtInAgentModules } from "./agents/index.js"
 export { evaluateCommand, redactSecrets } from "./policies/commandPolicy.js";
 export { evaluateFileAccess, isWithinWorkspace } from "./policies/filePolicy.js";
 export { ApprovalPolicy } from "./policies/approvalPolicy.js";
+export {
+  PolicyGate,
+  defaultPolicyGate,
+  type CommandPolicyEvaluation,
+  type FilePolicyEvaluation,
+  type CommandAcceptanceBlock,
+  type ShellCommandBlock,
+  type FileOperation,
+} from "./policies/PolicyGate.js";

@@ -1,9 +1,6 @@
 import type { AgentConfig, ExecutionMode } from "../schemas/agent.schema.js";
 import type { Phase } from "../schemas/task.schema.js";
-import {
-  buildPhaseInputArtifacts,
-  buildPhasePromptBody,
-} from "../runners/composeAgentPrompt.js";
+import { PromptComposer } from "../runners/PromptComposer.js";
 import type { AgentRunner } from "../runners/types.js";
 import { mergeSkillIds } from "../skills/mergeSkillIds.js";
 import { SkillResolver } from "../skills/SkillResolver.js";
@@ -31,9 +28,11 @@ export interface PhaseRunOutcome {
 
 export class PhaseRunner {
   private readonly skillResolver: SkillResolver;
+  private readonly promptComposer: PromptComposer;
 
   constructor(private readonly options: PhaseRunnerOptions) {
     this.skillResolver = options.skillResolver ?? new SkillResolver();
+    this.promptComposer = new PromptComposer();
   }
 
   async runPhase(
@@ -59,18 +58,26 @@ export class PhaseRunner {
       const runner = this.options.getRunner(executionMode);
       const artifactsDir = this.options.artifactStore.artifactsDir;
 
-      const prompt = buildPhasePromptBody({
-        objective: phase.objective,
-        task: this.options.taskContext.task,
-        inputArtifacts: buildPhaseInputArtifacts(artifactsDir, phase.inputs),
-        outputArtifacts: phase.outputs,
-      });
-
       const skillIds = mergeSkillIds(agentConfig.skills, phase.skills);
       const skills =
         skillIds.length > 0
           ? this.skillResolver.resolve(skillIds, { workspaceRoot: this.options.cwd })
           : undefined;
+
+      const prompt = this.promptComposer.composePhasePrompt({
+        phase: {
+          id: phase.id,
+          objective: phase.objective,
+          inputs: phase.inputs,
+          outputs: phase.outputs,
+          context: phase.context,
+        },
+        agentConfig,
+        taskContext: this.options.taskContext,
+        artifactsDir,
+        cwd: this.options.cwd,
+        skills,
+      });
 
       const result = await runner.run({
         agentId: phase.agent,

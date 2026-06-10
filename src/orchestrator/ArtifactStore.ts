@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { evaluateFileAccess } from "../policies/filePolicy.js";
+import { defaultPolicyGate } from "../policies/PolicyGate.js";
 
 export class ArtifactStore {
   constructor(
@@ -22,14 +22,12 @@ export class ArtifactStore {
   }
 
   writeArtifact(relativeName: string, content: string): string {
-    const policy = evaluateFileAccess(
+    defaultPolicyGate.enforceFileAccess(
       join(this.artifactsDir, relativeName),
       this.workspaceRoot,
       "write",
+      "Artifact write blocked",
     );
-    if (policy.verdict === "block") {
-      throw new Error(`Artifact write blocked: ${policy.reason}`);
-    }
 
     const fullPath = join(this.artifactsDir, relativeName);
     mkdirSync(resolve(fullPath, ".."), { recursive: true });
@@ -39,10 +37,12 @@ export class ArtifactStore {
 
   readArtifact(relativeName: string): string {
     const fullPath = join(this.artifactsDir, relativeName);
-    const policy = evaluateFileAccess(fullPath, this.workspaceRoot, "read");
-    if (policy.verdict === "block") {
-      throw new Error(`Artifact read blocked: ${policy.reason}`);
-    }
+    defaultPolicyGate.enforceFileAccess(
+      fullPath,
+      this.workspaceRoot,
+      "read",
+      "Artifact read blocked",
+    );
     if (!existsSync(fullPath)) {
       throw new Error(`Artifact not found: ${relativeName}`);
     }
@@ -54,10 +54,12 @@ export class ArtifactStore {
   }
 
   copyExternalToArtifact(sourcePath: string, destName?: string): string {
-    const policy = evaluateFileAccess(sourcePath, this.workspaceRoot, "read");
-    if (policy.verdict === "block") {
-      throw new Error(`External file copy blocked: ${policy.reason}`);
-    }
+    defaultPolicyGate.enforceFileAccess(
+      sourcePath,
+      this.workspaceRoot,
+      "read",
+      "External file copy blocked",
+    );
     const name = destName ?? basename(sourcePath);
     const dest = join(this.artifactsDir, name);
     copyFileSync(sourcePath, dest);

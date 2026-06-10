@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { evaluateCommand } from "../policies/commandPolicy.js";
 import { redactSecrets } from "../policies/commandPolicy.js";
+import { defaultPolicyGate } from "../policies/PolicyGate.js";
 import type { ShellRunner, ShellRunInput, ShellRunResult } from "./types.js";
 
 export interface ShellRunnerOptions {
@@ -15,14 +15,9 @@ export class NodeShellRunner implements ShellRunner {
 
   async run(input: ShellRunInput): Promise<ShellRunResult> {
     if (this.options.enforcePolicy !== false) {
-      const policy = evaluateCommand(input.command);
-      if (policy.verdict === "block") {
-        return {
-          exitCode: 1,
-          stdout: "",
-          stderr: `Command blocked by policy: ${policy.reason}`,
-          durationMs: 0,
-        };
+      const blocked = defaultPolicyGate.enforceCommandForShell(input.command);
+      if (blocked) {
+        return blocked;
       }
     }
 

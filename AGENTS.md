@@ -29,7 +29,8 @@ src/
   skills/           # SkillResolver, mergeSkillIds (loads skills/ at package root)
   cli.ts            # orchestrator CLI entry point
   index.ts          # Public library exports
-  orchestrator/     # Orchestrator, PhaseRunner, TaskGraph, RunState, …
+  orchestrator/     # Orchestrator, Run, PhaseExecutor, PhaseRunner, TaskGraph, RunState, …
+  orchestrator/acceptanceChecks/  # Per-type acceptance check handlers
   policies/         # commandPolicy, filePolicy, approvalPolicy
   runners/          # AgentRunner adapters (local, cloud, mock, shell)
   schemas/          # Zod schemas for workflow, agent, acceptance, task
@@ -45,7 +46,7 @@ workflows/          # User workflows (created by `orchestrator init`)
 
 1. **The orchestrator core must not import `@cursor/sdk`.** SDK usage lives only in `src/runners/` (`cursorRunnerCore`, `CursorLocalRunner`, `CursorCloudRunner`).
 2. **Agent execution goes through `AgentRunner`.** Inject `MockAgentRunner` in tests; never stub the SDK inside orchestrator code.
-3. **Prompt assembly is centralized** in `composeAgentPrompt.ts`. Do not duplicate prompt-building logic in phase or acceptance code.
+3. **Prompt assembly is centralized** in `PromptComposer.ts` (uses `composeAgentPrompt.ts` internally). Do not duplicate prompt-building logic in phase or acceptance code.
 4. **Acceptance retry semantics** belong in `AcceptanceGate`. Phase-level and workflow-level acceptance share this module.
 5. **Workflow validation** uses Zod schemas in `src/schemas/`. Extend schemas first, then handlers.
 
@@ -79,7 +80,7 @@ No orchestrator changes required.
 ### Add an acceptance check type
 
 1. Extend `acceptanceCheckSchema` in `src/schemas/acceptance.schema.ts`.
-2. Add a handler in `AcceptanceRunner.runSingleCheck`.
+2. Add a handler in `src/orchestrator/acceptanceChecks/` and register it in `acceptanceChecks/index.ts`.
 3. Add tests in `src/tests/acceptance-runner.test.ts`.
 
 ### Add an agent runner
