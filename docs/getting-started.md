@@ -34,19 +34,35 @@ Without an API key you can still validate workflows and run with `--dry-run`.
 
 ## Initialize a project
 
-From any repository where you want to run workflows:
+From the **repository root** (not from inside `.orchestrator/`):
 
 ```powershell
 orchestrator init
 ```
 
-This creates:
+Creates:
 
 ```text
-.orchestrator/config.yaml
+.orchestrator/
+  config.yaml       # Defaults for this repo
+  README.md         # Layout and next steps
 workflows/
-.runs/          # gitignored run output
+  generic-task.workflow.yaml
+.runs/              # Run artifacts (gitignore recommended)
 ```
+
+Validate and run the starter workflow:
+
+```powershell
+orchestrator validate --workflow .\workflows\generic-task.workflow.yaml
+
+orchestrator run `
+  --workflow .\workflows\generic-task.workflow.yaml `
+  --task "Your task" `
+  --repo-path .
+```
+
+To add more workflows, copy `workflows/generic-task.workflow.yaml`, edit the copy, and validate it. See [workflows.md](workflows.md) for the schema and [README.md](../README.md#create-a-workflow) for examples you can copy from the package.
 
 ## Validate an example workflow
 
@@ -109,7 +125,7 @@ orchestrator list-agents
 
 ## Create your own workflow
 
-1. Copy `src/examples/generic-task.workflow.yaml` to `workflows/my-task.workflow.yaml`.
+1. Copy `workflows/generic-task.workflow.yaml` to `workflows/my-task.workflow.yaml`.
 2. Adjust agents, phases, and acceptance criteria.
 3. Validate, then run:
 
@@ -119,10 +135,10 @@ orchestrator validate --workflow .\workflows\my-task.workflow.yaml
 orchestrator run `
   --workflow .\workflows\my-task.workflow.yaml `
   --task "Your task description" `
-  --repo-path C:\path\to\target-repo
+  --repo-path .
 ```
 
-See [workflows.md](workflows.md) for the full schema.
+See [workflows.md](workflows.md) for the full schema. For specialized templates (Windows packaging, repo review), copy from `node_modules/cursor-orchestrator/src/examples/`.
 
 ## Next steps
 
