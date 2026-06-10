@@ -123,11 +123,19 @@ npm run dev -- validate --workflow .\src\examples\generic-task.workflow.yaml
 
 ## Documentation
 
+- [Getting started](docs/getting-started.md) — first workflow run
+- [AGENTS.md](AGENTS.md) — guide for AI agents and contributors
+- [Contributing](CONTRIBUTING.md) — dev setup and PR workflow
+- [Documentation index](docs/README.md)
+
+**Deep dives**
+
 - [Architecture](docs/architecture.md)
 - [Workflows](docs/workflows.md)
 - [Agents](docs/agents.md)
 - [Acceptance criteria](docs/acceptance-criteria.md)
 - [Windows-first design](docs/windows-first.md)
+- [Domain glossary](CONTEXT.md)
 
 ## License
 
