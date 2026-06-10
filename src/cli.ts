@@ -8,6 +8,7 @@ import { Orchestrator } from "./orchestrator/Orchestrator.js";
 import { ConsoleRunProgress, noopRunProgress } from "./orchestrator/RunProgress.js";
 import { RunState } from "./orchestrator/RunState.js";
 import { parseWorkflowFile } from "./schemas/workflow.schema.js";
+import { resolveRunRepoUrl } from "./util/resolveRepoUrl.js";
 
 const program = new Command();
 
@@ -22,6 +23,10 @@ program
   .requiredOption("-w, --workflow <path>", "Path to workflow YAML/JSON file")
   .option("-t, --task <task>", "Task description")
   .option("-r, --repo-path <path>", "Repository/workspace path", process.cwd())
+  .option(
+    "--repo-url <url>",
+    "Git remote URL for cloud agents (auto-detected from origin when omitted)",
+  )
   .option("-m, --execution-mode <mode>", "Execution mode: local or cloud", "local")
   .option("--run-id <id>", "Custom run ID")
   .option("--dry-run", "Validate and simulate without calling agents", false)
@@ -30,6 +35,7 @@ program
     workflow: string;
     task?: string;
     repoPath: string;
+    repoUrl?: string;
     executionMode: string;
     runId?: string;
     dryRun: boolean;
@@ -41,10 +47,30 @@ program
       process.exit(1);
     }
 
+    const repoPath = resolve(opts.repoPath);
+    const executionMode = opts.executionMode === "cloud" ? "cloud" : "local";
+    const { repoUrl, source } = resolveRunRepoUrl({
+      repoPath,
+      executionMode,
+      repoUrl: opts.repoUrl,
+    });
+
+    if (executionMode === "cloud" && !repoUrl) {
+      console.error(
+        "Cloud mode requires a Git repository URL. Pass --repo-url or run against a git clone with origin configured.",
+      );
+      process.exit(1);
+    }
+
+    if (repoUrl && !opts.quiet) {
+      const via = source === "git" ? "auto-detected from origin" : "from --repo-url";
+      console.error(`[orchestrator] Cloud repository (${via}): ${repoUrl}`);
+    }
+
     const workflow = parseWorkflowFile(workflowPath);
     const orchestrator = new Orchestrator({
-      cwd: resolve(opts.repoPath),
-      executionMode: opts.executionMode === "cloud" ? "cloud" : "local",
+      cwd: repoPath,
+      executionMode,
       dryRun: opts.dryRun,
       progress: opts.quiet ? noopRunProgress : new ConsoleRunProgress(),
     });
@@ -53,8 +79,9 @@ program
       workflow,
       inputs: {
         task: opts.task,
-        repoPath: resolve(opts.repoPath),
-        executionMode: opts.executionMode === "cloud" ? "cloud" : "local",
+        repoPath,
+        repoUrl,
+        executionMode,
       },
       runId: opts.runId,
     });

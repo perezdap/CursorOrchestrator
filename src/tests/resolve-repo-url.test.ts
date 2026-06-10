@@ -1,0 +1,114 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { describe, expect, it } from "vitest";
+import {
+  detectGitRemoteUrl,
+  normalizeGitRemoteUrl,
+  resolveRunRepoUrl,
+} from "../util/resolveRepoUrl.js";
+
+describe("normalizeGitRemoteUrl", () => {
+  it("converts scp-style GitHub SSH remotes to HTTPS", () => {
+    expect(normalizeGitRemoteUrl("git@github.com:perezdap/WingetPsadtIntunePackager.git")).toBe(
+      "https://github.com/perezdap/WingetPsadtIntunePackager",
+    );
+  });
+
+  it("converts ssh:// remotes to HTTPS", () => {
+    expect(normalizeGitRemoteUrl("ssh://git@github.com/perezdap/repo.git")).toBe(
+      "https://github.com/perezdap/repo",
+    );
+  });
+
+  it("strips .git from HTTPS remotes", () => {
+    expect(
+      normalizeGitRemoteUrl("https://github.com/perezdap/WingetPsadtIntunePackager.git"),
+    ).toBe("https://github.com/perezdap/WingetPsadtIntunePackager");
+  });
+
+  it("preserves HTTPS remotes without .git suffix", () => {
+    expect(normalizeGitRemoteUrl("https://github.com/perezdap/repo")).toBe(
+      "https://github.com/perezdap/repo",
+    );
+  });
+});
+
+describe("detectGitRemoteUrl", () => {
+  it("reads origin from a git repository", () => {
+    const dir = mkdtempSync(join(tmpdir(), "orchestrator-repo-url-"));
+    try {
+      execFileSync("git", ["init"], { cwd: dir });
+      execFileSync(
+        "git",
+        ["remote", "add", "origin", "git@github.com:example/project.git"],
+        { cwd: dir },
+      );
+
+      expect(detectGitRemoteUrl(dir)).toBe("https://github.com/example/project");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("resolveRunRepoUrl", () => {
+  it("prefers an explicit repo URL flag", () => {
+    const result = resolveRunRepoUrl({
+      repoPath: process.cwd(),
+      executionMode: "cloud",
+      repoUrl: "https://github.com/perezdap/custom.git",
+    });
+
+    expect(result).toEqual({
+      repoUrl: "https://github.com/perezdap/custom",
+      source: "flag",
+    });
+  });
+
+  it("auto-detects origin for cloud mode when no flag is passed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "orchestrator-resolve-url-"));
+    try {
+      execFileSync("git", ["init"], { cwd: dir });
+      execFileSync(
+        "git",
+        ["remote", "add", "origin", "git@github.com:example/auto-detect.git"],
+        { cwd: dir },
+      );
+
+      const result = resolveRunRepoUrl({
+        repoPath: dir,
+        executionMode: "cloud",
+      });
+
+      expect(result).toEqual({
+        repoUrl: "https://github.com/example/auto-detect",
+        source: "git",
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-detect for local mode", () => {
+    const dir = mkdtempSync(join(tmpdir(), "orchestrator-local-url-"));
+    try {
+      execFileSync("git", ["init"], { cwd: dir });
+      execFileSync(
+        "git",
+        ["remote", "add", "origin", "git@github.com:example/local.git"],
+        { cwd: dir },
+      );
+
+      expect(
+        resolveRunRepoUrl({
+          repoPath: dir,
+          executionMode: "local",
+        }),
+      ).toEqual({});
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

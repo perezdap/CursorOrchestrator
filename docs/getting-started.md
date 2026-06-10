@@ -32,6 +32,26 @@ $env:CURSOR_API_KEY = "cursor_..."
 
 Without an API key you can still validate workflows and run with `--dry-run`.
 
+## Cloud execution
+
+Cloud agents run on Cursor-hosted VMs against a **GitHub repository**, not your local `--repo-path` folder. Acceptance checks (`dotnet test`, `npm test`, etc.) still run locally against `--repo-path`.
+
+```powershell
+orchestrator run `
+  --workflow .\workflows\dotnet-task.workflow.yaml `
+  --task "Add CLI parsing tests" `
+  --repo-path C:\path\to\your\repo `
+  --execution-mode cloud
+```
+
+When `--execution-mode cloud` is set:
+
+- **`--repo-url`** — optional explicit Git remote (HTTPS or SSH). Normalized to HTTPS for the Cursor SDK.
+- **Auto-detect** — if `--repo-url` is omitted, the CLI reads `git remote get-url origin` from `--repo-path` and converts `git@github.com:org/repo.git` to `https://github.com/org/repo`.
+- **Failure** — cloud mode exits early if no URL can be resolved.
+
+Push your branch before a cloud run so agents work against the latest remote state, then pull locally before acceptance passes.
+
 ## Initialize a project
 
 From the **repository root** (not from inside `.orchestrator/`):

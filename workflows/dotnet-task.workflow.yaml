@@ -1,0 +1,74 @@
+name: dotnet-task
+description: Plan, implement, review, and verify a .NET task with dotnet test acceptance.
+
+inputs:
+  task: string
+  repoPath: string
+  executionMode: local
+
+agents:
+  planner:
+    type: planner
+    model: auto
+    instructions: |
+      Decompose the task for a .NET 8 solution using System.CommandLine, xUnit, FluentAssertions,
+      NSubstitute, and Verify where appropriate. Call out affected projects, test files, and risks.
+  implementer:
+    type: implementer
+    model: auto
+    instructions: |
+      Make focused C# changes. Match existing patterns in WingetPsadtIntunePackager. Prefer small diffs.
+  reviewer:
+    type: reviewer
+    model: auto
+    instructions: |
+      Review for correctness, SOLID, async usage, test quality, and backward compatibility.
+  verifier:
+    type: verifier
+    model: auto
+    instructions: |
+      Run dotnet build and dotnet test. Confirm acceptance criteria are met.
+
+phases:
+  - id: intake
+    agent: planner
+    objective: Understand and normalize the task for this .NET repo.
+    outputs:
+      - plan.md
+      - acceptance.md
+
+  - id: implement
+    agent: implementer
+    objective: Implement the planned work.
+    dependsOn:
+      - intake
+
+  - id: review
+    agent: reviewer
+    objective: Review the implementation.
+    dependsOn:
+      - implement
+
+  - id: verify
+    agent: verifier
+    objective: Run build and test checks.
+    dependsOn:
+      - review
+
+acceptance:
+  maxRetries: 2
+  retryPhase: implement
+  criteria:
+    - id: build-pass
+      type: command
+      command: dotnet build
+      required: true
+    - id: tests-pass
+      type: test_result
+      command: dotnet test --no-build
+      parser: generic
+      required: true
+    - id: plan-exists
+      type: markdown_artifact
+      path: plan.md
+      required: true
