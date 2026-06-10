@@ -2,10 +2,7 @@ import { basename, dirname, join } from "node:path";
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolveExamplesDir } from "./resolveExamplesDir.js";
 
-const STARTER_WORKFLOWS = [
-  "generic-task.workflow.yaml",
-  "winget-psadt-package.workflow.yaml",
-] as const;
+const STARTER_WORKFLOWS = ["generic-task.workflow.yaml"] as const;
 
 const CONFIG_CONTENT = [
   "# Cursor Orchestrator configuration",
@@ -50,7 +47,7 @@ orchestrator run \`
   --repo-path .
 \`\`\`
 
-See \`workflows/\` for starter templates copied during init.
+See \`workflows/generic-task.workflow.yaml\` for the starter template copied during init. To add more workflows, copy that file and edit it, or see the [workflows guide](https://github.com/perezdap/CursorOrchestrator/blob/main/docs/workflows.md).
 `;
 
 export interface InitProjectResult {
@@ -157,7 +154,7 @@ export function formatInitSummary(result: InitProjectResult): string {
   lines.push("Project layout:");
   lines.push("  .orchestrator/config.yaml   Orchestrator settings");
   lines.push("  .orchestrator/README.md     Layout and next steps");
-  lines.push("  workflows/                  Starter workflow templates");
+  lines.push("  workflows/                  Starter workflow template");
   lines.push("  .runs/                      Run artifacts (gitignore recommended)");
   lines.push("");
   lines.push("Next steps:");

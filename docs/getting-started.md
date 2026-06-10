@@ -48,7 +48,6 @@ Creates:
   README.md         # Layout and next steps
 workflows/
   generic-task.workflow.yaml
-  winget-psadt-package.workflow.yaml
 .runs/              # Run artifacts (gitignore recommended)
 ```
 
@@ -62,6 +61,8 @@ orchestrator run `
   --task "Your task" `
   --repo-path .
 ```
+
+To add more workflows, copy `workflows/generic-task.workflow.yaml`, edit the copy, and validate it. See [workflows.md](workflows.md) for the schema and [README.md](../README.md#create-a-workflow) for examples you can copy from the package.
 
 ## Validate an example workflow
 
@@ -124,7 +125,7 @@ orchestrator list-agents
 
 ## Create your own workflow
 
-1. Copy `src/examples/generic-task.workflow.yaml` to `workflows/my-task.workflow.yaml`.
+1. Copy `workflows/generic-task.workflow.yaml` to `workflows/my-task.workflow.yaml`.
 2. Adjust agents, phases, and acceptance criteria.
 3. Validate, then run:
 
@@ -134,10 +135,10 @@ orchestrator validate --workflow .\workflows\my-task.workflow.yaml
 orchestrator run `
   --workflow .\workflows\my-task.workflow.yaml `
   --task "Your task description" `
-  --repo-path C:\path\to\target-repo
+  --repo-path .
 ```
 
-See [workflows.md](workflows.md) for the full schema.
+See [workflows.md](workflows.md) for the full schema. For specialized templates (Windows packaging, repo review), copy from `node_modules/cursor-orchestrator/src/examples/`.
 
 ## Next steps
 

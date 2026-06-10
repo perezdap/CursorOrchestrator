@@ -35,9 +35,29 @@ npx orchestrator init
 orchestrator init
 ```
 
-Creates `.orchestrator/config.yaml`, `.orchestrator/README.md`, `workflows/` (with starter templates), and `.runs/`.
+Creates `.orchestrator/config.yaml`, `.orchestrator/README.md`, `workflows/generic-task.workflow.yaml`, and `.runs/`.
 
 Run from the **repository root**, not from inside `.orchestrator/`.
+
+## Create a workflow
+
+`init` seeds one starter template. To add workflows for your project:
+
+1. Copy the starter and rename it:
+
+```powershell
+Copy-Item .\workflows\generic-task.workflow.yaml .\workflows\my-task.workflow.yaml
+```
+
+2. Edit agents, phases, dependencies, and acceptance criteria in the new file.
+
+3. Validate before running:
+
+```powershell
+orchestrator validate --workflow .\workflows\my-task.workflow.yaml
+```
+
+See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/` (for example `winget-psadt-package.workflow.yaml` for Windows packaging).
 
 ## Run a workflow
 

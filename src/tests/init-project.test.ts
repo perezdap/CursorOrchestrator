@@ -31,7 +31,6 @@ describe("initProject", () => {
       ".orchestrator/config.yaml",
       ".orchestrator/README.md",
       "workflows/generic-task.workflow.yaml",
-      "workflows/winget-psadt-package.workflow.yaml",
     ]);
     expect(readFileSync(join(projectRoot, ".orchestrator/config.yaml"), "utf-8")).toContain(
       "defaultExecutionMode: local",
@@ -63,7 +62,6 @@ describe("initProject", () => {
       ".orchestrator/config.yaml",
       ".orchestrator/README.md",
       "workflows/generic-task.workflow.yaml",
-      "workflows/winget-psadt-package.workflow.yaml",
     ]);
   });
 
