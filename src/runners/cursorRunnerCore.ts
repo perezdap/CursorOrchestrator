@@ -1,6 +1,5 @@
 import type { AgentOptions } from "@cursor/sdk";
 import { redactSecrets } from "../policies/commandPolicy.js";
-import { composeAgentPrompt } from "./composeAgentPrompt.js";
 import type { AgentRunInput, AgentRunResult } from "./types.js";
 
 export interface CursorRunnerCoreConfig {
@@ -63,11 +62,10 @@ export async function runCursorAgent(
 
   try {
     const { Agent } = await import("@cursor/sdk");
-    const prompt = composeAgentPrompt(input);
 
     await using agent = await Agent.create(config.buildAgentOptions(input, apiKey));
 
-    const run = await agent.send(prompt);
+    const run = await agent.send(input.prompt);
     const result = await run.wait();
 
     return mapRunResult(input, agent.agentId, result);

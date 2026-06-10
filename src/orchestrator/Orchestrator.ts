@@ -6,19 +6,17 @@ import { CursorLocalRunner } from "../runners/cursorLocalRunner.js";
 import type { AgentRunner } from "../runners/types.js";
 import { NodeShellRunner } from "../runners/shellRunner.js";
 import { ApprovalPolicy } from "../policies/approvalPolicy.js";
-import { AcceptanceGate } from "./AcceptanceGate.js";
 import { AcceptanceRunner } from "./AcceptanceRunner.js";
 import { AgentRegistry } from "./AgentRegistry.js";
 import { ArtifactStore } from "./ArtifactStore.js";
 import { PhaseRunner } from "./PhaseRunner.js";
-import { formatFinalReport } from "./RunReports.js";
+import { Run, type RunWorkflowResult } from "./Run.js";
 import { generateRunId, RunState } from "./RunState.js";
 import { TaskGraph } from "./TaskGraph.js";
-import {
-  noopRunProgress,
-  startHeartbeat,
-  type RunProgressReporter,
-} from "./RunProgress.js";
+import { noopRunProgress, type RunProgressReporter } from "./RunProgress.js";
+
+export type { RunWorkflowResult } from "./Run.js";
+export type { RunContext } from "./Run.js";
 
 export interface OrchestratorOptions {
   cwd?: string;
@@ -40,17 +38,7 @@ export interface RunWorkflowInput {
   resume?: boolean;
 }
 
-export interface RunWorkflowResult {
-  runId: string;
-  runDir: string;
-  status: "completed" | "failed";
-  acceptancePassed: boolean;
-  phasesCompleted: number;
-  phasesTotal: number;
-  message: string;
-}
-
-interface RunContext {
+interface InternalRunContext {
   cwd: string;
   runState: RunState;
   artifactStore: ArtifactStore;
@@ -70,7 +58,6 @@ export class Orchestrator {
   private readonly dryRun: boolean;
   private readonly overrideRunner?: AgentRunner;
   private readonly progress: RunProgressReporter;
-  private runStartedAt = 0;
 
   constructor(options: OrchestratorOptions = {}) {
     this.cwd = options.cwd ?? process.cwd();
@@ -113,199 +100,17 @@ export class Orchestrator {
     const taskGraph = new TaskGraph(input.workflow.phases);
     const executionOrder = taskGraph.getExecutionOrder();
 
-    runState.setStatus("running");
-    runState.appendPhaseLog(`Workflow **${input.workflow.name}** started`);
-    this.runStartedAt = Date.now();
-
-    this.progress.workflowStarted({
-      runId: runState.runId,
-      workflowName: input.workflow.name,
-      phasesTotal: executionOrder.length,
-      executionMode,
+    const run = new Run({
+      runState: ctx.runState,
+      phaseRunner: ctx.phaseRunner,
+      acceptanceRunner: ctx.acceptanceRunner,
+      registry: ctx.registry,
+      progress: this.progress,
       dryRun: this.dryRun,
+      executionMode,
     });
 
-    let phasesCompleted = 0;
-
-    for (const [index, phase] of executionOrder.entries()) {
-      const record = runState.getPhaseRecord(phase.id);
-      if (record.status === "completed" || record.status === "skipped") {
-        phasesCompleted += 1;
-        continue;
-      }
-
-      const agentConfig = registry.resolve(phase.agent);
-      const phaseIndex = index + 1;
-
-      this.progress.phaseStarted({
-        phaseIndex,
-        phasesTotal: executionOrder.length,
-        phaseId: phase.id,
-        agentId: phase.agent,
-        model: agentConfig.model,
-        attempt: 1,
-        dryRun: this.dryRun,
-      });
-
-      const phaseStartedAt = Date.now();
-
-      if (this.dryRun) {
-        runState.updatePhase(phase.id, {
-          status: "completed",
-          completedAt: new Date().toISOString(),
-          attempts: 1,
-        });
-        this.progress.phaseFinished({
-          phaseId: phase.id,
-          success: true,
-          durationMs: Date.now() - phaseStartedAt,
-        });
-        phasesCompleted += 1;
-        continue;
-      }
-
-      const stopHeartbeat = startHeartbeat((elapsedMs) => {
-        this.progress.heartbeat({
-          phaseId: phase.id,
-          agentId: phase.agent,
-          elapsedMs,
-        });
-      });
-
-      let outcome;
-      try {
-        outcome = await ctx.phaseRunner.runPhase(phase, agentConfig);
-      } finally {
-        stopHeartbeat();
-      }
-
-      this.progress.phaseFinished({
-        phaseId: phase.id,
-        success: outcome.success,
-        durationMs: Date.now() - phaseStartedAt,
-        error: outcome.error,
-      });
-
-      if (!outcome.success) {
-        return this.failRun(runState, executionOrder.length, phasesCompleted, {
-          error: outcome.error,
-          message: `Phase "${phase.id}" failed: ${outcome.error ?? "unknown"}`,
-        });
-      }
-
-      if (phase.acceptance?.length) {
-        const maxAttempts = (phase.maxRetries ?? 0) + 1;
-        this.progress.acceptanceStarted({
-          scope: "phase",
-          phaseId: phase.id,
-          criteriaCount: phase.acceptance.length,
-          maxAttempts,
-        });
-
-        const gate = this.createAcceptanceGate(ctx, {
-          onAttemptStart: (attempt, total) => {
-            this.progress.acceptanceAttempt({
-              scope: "phase",
-              phaseId: phase.id,
-              attempt,
-              maxAttempts: total,
-            });
-          },
-        });
-
-        const acceptance = await gate.evaluate(phase.acceptance, {
-          maxRetries: phase.maxRetries ?? 0,
-        });
-
-        this.progress.acceptanceFinished({
-          scope: "phase",
-          phaseId: phase.id,
-          passed: acceptance.passed,
-          attempts: acceptance.attempts,
-        });
-
-        if (!acceptance.passed) {
-          return this.failRun(runState, executionOrder.length, phasesCompleted, {
-            error: "Phase acceptance criteria failed",
-            message: `Phase "${phase.id}" acceptance failed`,
-          });
-        }
-      }
-
-      phasesCompleted += 1;
-    }
-
-    const workflowAcceptance = input.workflow.acceptance;
-    let acceptancePassed = true;
-
-    if (workflowAcceptance?.criteria.length) {
-      const maxAttempts = workflowAcceptance.maxRetries + 1;
-      this.progress.acceptanceStarted({
-        scope: "workflow",
-        criteriaCount: workflowAcceptance.criteria.length,
-        maxAttempts,
-      });
-
-      const gate = this.createAcceptanceGate(ctx, {
-        onAttemptStart: (attempt, total) => {
-          this.progress.acceptanceAttempt({
-            scope: "workflow",
-            attempt,
-            maxAttempts: total,
-          });
-        },
-        onAttemptFailed: async (attempt) => {
-          if (!workflowAcceptance.retryPhase) return;
-          runState.appendPhaseLog(
-            `Acceptance failed (attempt ${attempt}). Retrying phase **${workflowAcceptance.retryPhase}**`,
-          );
-          const phase = input.workflow.phases.find(
-            (p) => p.id === workflowAcceptance.retryPhase,
-          );
-          if (phase) {
-            await ctx.phaseRunner.runPhase(phase, registry.resolve(phase.agent));
-          }
-        },
-      });
-
-      const result = await gate.evaluate(workflowAcceptance.criteria, {
-        maxRetries: workflowAcceptance.maxRetries,
-      });
-
-      this.progress.acceptanceFinished({
-        scope: "workflow",
-        passed: result.passed,
-        attempts: result.attempts,
-      });
-
-      acceptancePassed = result.passed;
-    }
-
-    const finalStatus = acceptancePassed ? "completed" : "failed";
-    const message = acceptancePassed
-      ? "Workflow completed successfully"
-      : "Workflow failed acceptance after retries";
-
-    runState.setStatus(finalStatus);
-    runState.setCurrentPhase(undefined);
-    runState.writeFinalReport(this.buildFinalReport(runState, acceptancePassed));
-
-    this.progress.workflowFinished({
-      runId: runState.runId,
-      status: finalStatus,
-      durationMs: Date.now() - this.runStartedAt,
-      message,
-    });
-
-    return {
-      runId: runState.runId,
-      runDir: runState.runDir,
-      status: finalStatus,
-      acceptancePassed,
-      phasesCompleted,
-      phasesTotal: executionOrder.length,
-      message,
-    };
+    return run.execute(input.workflow, executionOrder);
   }
 
   private createRunContext(params: {
@@ -314,7 +119,7 @@ export class Orchestrator {
     registry: AgentRegistry;
     executionMode: ExecutionMode;
     taskInputs: Record<string, unknown>;
-  }): RunContext {
+  }): InternalRunContext {
     const artifactStore = new ArtifactStore(params.runState.runDir, params.cwd);
     const taskContext = this.toStringContext(params.taskInputs);
 
@@ -361,49 +166,6 @@ export class Orchestrator {
     });
   }
 
-  private createAcceptanceGate(
-    ctx: RunContext,
-    options?: {
-      onAttemptStart?: (attempt: number, maxAttempts: number) => void;
-      onAttemptFailed?: (attempt: number) => Promise<void>;
-    },
-  ): AcceptanceGate {
-    return new AcceptanceGate({
-      acceptanceRunner: ctx.acceptanceRunner,
-      persistReport: (report) => ctx.runState.writeAcceptanceReport(report),
-      onAttemptStart: options?.onAttemptStart,
-      onAttemptFailed: options?.onAttemptFailed,
-    });
-  }
-
-  private failRun(
-    runState: RunState,
-    phasesTotal: number,
-    phasesCompleted: number,
-    params: { error?: string; message: string },
-  ): RunWorkflowResult {
-    runState.setStatus("failed");
-    runState.setCurrentPhase(undefined);
-    runState.writeFinalReport(this.buildFinalReport(runState, false, params.error));
-
-    this.progress.workflowFinished({
-      runId: runState.runId,
-      status: "failed",
-      durationMs: Date.now() - this.runStartedAt,
-      message: params.message,
-    });
-
-    return {
-      runId: runState.runId,
-      runDir: runState.runDir,
-      status: "failed",
-      acceptancePassed: false,
-      phasesCompleted,
-      phasesTotal,
-      message: params.message,
-    };
-  }
-
   private getRunner(mode: ExecutionMode): AgentRunner {
     if (this.overrideRunner) return this.overrideRunner;
     if (mode === "cloud") return this.cloudRunner;
@@ -434,22 +196,5 @@ export class Orchestrator {
       ctx[key] = typeof value === "string" ? value : JSON.stringify(value);
     }
     return ctx;
-  }
-
-  private buildFinalReport(
-    runState: RunState,
-    success: boolean,
-    error?: string,
-  ): string {
-    const data = runState.toJSON();
-    return formatFinalReport({
-      runId: data.runId,
-      workflowName: data.workflowName,
-      updatedAt: data.updatedAt,
-      runDir: runState.runDir,
-      phases: data.phases,
-      success,
-      error,
-    });
   }
 }
