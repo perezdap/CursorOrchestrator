@@ -1,0 +1,85 @@
+# Workflows
+
+Workflows are YAML or JSON files validated by Zod (`workflow.schema.ts`).
+
+## Minimal shape
+
+```yaml
+name: my-workflow
+description: Optional description
+
+inputs:
+  task: string
+  repoPath: string
+
+agents:
+  planner:
+    type: planner
+    model: auto
+    instructions: |
+      Custom instructions override type defaults.
+
+phases:
+  - id: plan
+    agent: planner
+    objective: Create a plan.
+    outputs:
+      - plan.md
+
+acceptance:
+  maxRetries: 2
+  retryPhase: plan
+  criteria:
+    - id: plan-ready
+      type: markdown_artifact
+      path: plan.md
+      required: true
+```
+
+## Phase fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique phase identifier |
+| `agent` | Key from `agents` map |
+| `objective` | Prompt objective for the agent |
+| `dependsOn` | Phase IDs that must complete first |
+| `context` | Key/value strings added to agent context |
+| `inputs` | Expected input artifact names |
+| `outputs` | Artifacts the phase should produce |
+| `requiredArtifacts` | Alias for required outputs |
+| `acceptance` | Phase-level acceptance checks |
+| `maxRetries` | Per-phase agent retries |
+| `onFailure` | `stop`, `skip`, `retry`, or `continue` |
+
+## Example workflows
+
+| File | Use case |
+|------|----------|
+| `generic-task.workflow.yaml` | Plan → implement → review → verify |
+| `winget-psadt-package.workflow.yaml` | Windows packaging with Pester |
+| `repo-review.workflow.yaml` | Research and review pipeline |
+
+## Validation
+
+```powershell
+orchestrator validate --workflow .\src\examples\generic-task.workflow.yaml
+```
+
+Validation checks:
+
+- Unknown agent references
+- Unknown phase dependencies
+- Duplicate phase IDs
+- Cyclic dependencies
+- Schema shape for all nested objects
+
+## Inputs at runtime
+
+CLI flags and workflow `inputs` merge into run state:
+
+```powershell
+orchestrator run -w .\workflow.yaml -t "Fix login bug" -r C:\repos\my-app
+```
+
+`repoPath` becomes the workspace root for policies and artifact resolution.
