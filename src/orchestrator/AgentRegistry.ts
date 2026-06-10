@@ -1,4 +1,5 @@
 import { builtInAgentDefinitions } from "../agents/index.js";
+import { mergeSkillIds } from "../skills/mergeSkillIds.js";
 import type { AgentConfig, AgentDefinition, AgentType } from "../schemas/agent.schema.js";
 
 export class AgentRegistry {
@@ -41,6 +42,7 @@ export class AgentRegistry {
       executionMode: workflowAgent.executionMode ?? typeDefault.executionMode,
       inputs: workflowAgent.inputs ?? typeDefault.inputs,
       outputs: workflowAgent.outputs ?? typeDefault.outputs,
+      skills: mergeSkillIds(typeDefault.skills, workflowAgent.skills),
     };
   }
 

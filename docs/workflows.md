@@ -45,6 +45,7 @@ acceptance:
 | `objective` | Prompt objective for the agent |
 | `dependsOn` | Phase IDs that must complete first |
 | `context` | Key/value strings added to agent context |
+| `skills` | Extra skill ids merged after agent defaults for this phase |
 | `inputs` | Expected input artifact names |
 | `outputs` | Artifacts the phase should produce |
 | `requiredArtifacts` | Alias for required outputs |

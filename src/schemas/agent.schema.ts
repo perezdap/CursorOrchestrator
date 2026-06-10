@@ -26,6 +26,7 @@ export const agentConfigSchema = z.object({
   executionMode: executionModeSchema.optional(),
   inputs: z.array(z.string()).optional(),
   outputs: z.array(z.string()).optional(),
+  skills: z.array(z.string()).optional(),
 });
 
 export type AgentConfig = z.infer<typeof agentConfigSchema>;

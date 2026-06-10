@@ -101,6 +101,8 @@ describe("AgentRegistry", () => {
     expect(agent.type).toBe("planner");
     expect(agent.instructions).toBe("Plan");
     expect(agent.outputs).toContain("plan.md");
+    expect(agent.skills).toContain("planner");
+    expect(agent.skills).toContain("windows-first");
   });
 
   it("lists built-in agent types", () => {

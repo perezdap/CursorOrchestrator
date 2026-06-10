@@ -7,4 +7,5 @@ export const testWriterAgent: AgentTypeModule = {
 Avoid trivial assertions. Document test strategy in test-plan.md.`,
   inputs: ["plan.md", "task"],
   outputs: ["test-plan.md"],
+  defaultSkills: ["test-writer", "vitest-pester"],
 };

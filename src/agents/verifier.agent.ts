@@ -7,4 +7,5 @@ export const verifierAgent: AgentTypeModule = {
 Document results in verification.md with pass/fail per criterion and evidence.`,
   inputs: ["acceptance.md", "review.md"],
   outputs: ["verification.md"],
+  defaultSkills: ["verifier", "acceptance-verification"],
 };

@@ -7,4 +7,5 @@ export const releaseManagerAgent: AgentTypeModule = {
 Include Windows packaging guidance (winget, PSADT, Intune) when relevant.`,
   inputs: ["plan.md", "verification.md"],
   outputs: ["release-notes.md"],
+  defaultSkills: ["release-manager", "windows-first"],
 };

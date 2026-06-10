@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs";
 import { extname } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
+import { builtInAgentModules } from "../agents/index.js";
+import { mergeSkillIds } from "../skills/mergeSkillIds.js";
+import { SkillResolver } from "../skills/SkillResolver.js";
 import { agentConfigSchema } from "./agent.schema.js";
 import { acceptanceConfigSchema } from "./acceptance.schema.js";
 import { phaseSchema } from "./task.schema.js";
@@ -86,7 +89,12 @@ export function parseWorkflowFile(filePath: string): Workflow {
   return validateWorkflow(raw);
 }
 
-export function validateWorkflow(raw: unknown): Workflow {
+export interface ValidateWorkflowOptions {
+  workspaceRoot?: string;
+  skillResolver?: SkillResolver;
+}
+
+export function validateWorkflow(raw: unknown, options: ValidateWorkflowOptions = {}): Workflow {
   const result = workflowSchema.safeParse(raw);
   if (!result.success) {
     throw new WorkflowValidationError(
@@ -94,7 +102,51 @@ export function validateWorkflow(raw: unknown): Workflow {
       result.error.issues,
     );
   }
+
+  validateWorkflowSkills(result.data, options);
   return result.data;
+}
+
+function validateWorkflowSkills(workflow: Workflow, options: ValidateWorkflowOptions): void {
+  const typeDefaultSkills = new Map(
+    builtInAgentModules.map((module) => [module.type, module.defaultSkills ?? []]),
+  );
+  const skillIds = new Set<string>();
+
+  for (const agent of Object.values(workflow.agents)) {
+    const defaults = typeDefaultSkills.get(agent.type) ?? [];
+    for (const id of mergeSkillIds(defaults, agent.skills)) {
+      skillIds.add(id);
+    }
+  }
+
+  for (const phase of workflow.phases) {
+    for (const id of phase.skills ?? []) {
+      skillIds.add(id);
+    }
+  }
+
+  if (skillIds.size === 0) {
+    return;
+  }
+
+  const resolver = options.skillResolver ?? new SkillResolver();
+  const missing = resolver.findMissingIds([...skillIds], {
+    workspaceRoot: options.workspaceRoot,
+  });
+
+  if (missing.length > 0) {
+    throw new WorkflowValidationError(
+      `Invalid workflow: unknown skill id(s): ${missing.join(", ")}`,
+      [
+        {
+          code: z.ZodIssueCode.custom,
+          message: `Unknown skill id(s): ${missing.join(", ")}`,
+          path: ["skills"],
+        },
+      ],
+    );
+  }
 }
 
 function detectPhaseCycle(phases: Array<{ id: string; dependsOn: string[] }>): boolean {

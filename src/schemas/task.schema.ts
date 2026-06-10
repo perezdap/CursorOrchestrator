@@ -19,6 +19,7 @@ export const phaseSchema = z.object({
   outputs: z.array(z.string()).optional(),
   requiredArtifacts: z.array(z.string()).optional(),
   dependsOn: z.array(z.string()).default([]),
+  skills: z.array(z.string()).optional(),
   acceptance: z.array(acceptanceCheckSchema).optional(),
   maxRetries: z.number().int().nonnegative().optional(),
   onFailure: phaseFailureBehaviorSchema.optional(),

@@ -40,6 +40,13 @@ export function composeAgentPrompt(input: AgentRunInput): string {
     input.prompt,
   ];
 
+  if (input.skills?.length) {
+    parts.push("", "## Skills");
+    for (const skill of input.skills) {
+      parts.push("", `### ${skill.name}`, skill.body);
+    }
+  }
+
   if (input.context && Object.keys(input.context).length > 0) {
     parts.push("", "## Context");
     for (const [key, value] of Object.entries(input.context)) {

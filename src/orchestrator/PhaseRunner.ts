@@ -5,6 +5,8 @@ import {
   buildPhasePromptBody,
 } from "../runners/composeAgentPrompt.js";
 import type { AgentRunner } from "../runners/types.js";
+import { mergeSkillIds } from "../skills/mergeSkillIds.js";
+import { SkillResolver } from "../skills/SkillResolver.js";
 import type { ArtifactStore } from "./ArtifactStore.js";
 import type { RunState } from "./RunState.js";
 
@@ -16,6 +18,7 @@ export interface PhaseRunnerOptions {
   defaultExecutionMode: ExecutionMode;
   taskContext: Record<string, string>;
   apiKey?: string;
+  skillResolver?: SkillResolver;
 }
 
 export interface PhaseRunOutcome {
@@ -27,7 +30,11 @@ export interface PhaseRunOutcome {
 }
 
 export class PhaseRunner {
-  constructor(private readonly options: PhaseRunnerOptions) {}
+  private readonly skillResolver: SkillResolver;
+
+  constructor(private readonly options: PhaseRunnerOptions) {
+    this.skillResolver = options.skillResolver ?? new SkillResolver();
+  }
 
   async runPhase(
     phase: Phase,
@@ -59,6 +66,12 @@ export class PhaseRunner {
         outputArtifacts: phase.outputs,
       });
 
+      const skillIds = mergeSkillIds(agentConfig.skills, phase.skills);
+      const skills =
+        skillIds.length > 0
+          ? this.skillResolver.resolve(skillIds, { workspaceRoot: this.options.cwd })
+          : undefined;
+
       const result = await runner.run({
         agentId: phase.agent,
         agentConfig,
@@ -73,6 +86,7 @@ export class PhaseRunner {
           ...(phase.context ?? {}),
         },
         apiKey: this.options.apiKey,
+        skills,
       });
 
       if (result.agentSessionId) {

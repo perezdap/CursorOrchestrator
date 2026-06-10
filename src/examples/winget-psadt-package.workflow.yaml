@@ -32,6 +32,8 @@ phases:
   - id: plan-packaging
     agent: planner
     objective: Define packaging approach for winget and PSADT.
+    skills:
+      - winget-psadt-package
     outputs:
       - plan.md
       - acceptance.md
@@ -39,6 +41,8 @@ phases:
   - id: implement-scripts
     agent: implementer
     objective: Implement PSADT and winget packaging assets.
+    skills:
+      - winget-psadt-package
     dependsOn:
       - plan-packaging
     outputs:
@@ -47,6 +51,8 @@ phases:
   - id: write-tests
     agent: test-writer
     objective: Add Pester tests for packaging scripts.
+    skills:
+      - winget-psadt-package
     dependsOn:
       - implement-scripts
     outputs:

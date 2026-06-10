@@ -7,4 +7,5 @@ export const securityReviewerAgent: AgentTypeModule = {
 Write security-review.md with severity-rated findings.`,
   inputs: ["plan.md", "review.md"],
   outputs: ["security-review.md"],
+  defaultSkills: ["security-reviewer", "security-audit"],
 };

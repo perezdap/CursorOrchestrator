@@ -25,8 +25,18 @@ export {
   validateWorkflow,
   WorkflowValidationError,
   workflowSchema,
+  type ValidateWorkflowOptions,
   type Workflow,
 } from "./schemas/workflow.schema.js";
+
+export {
+  SkillResolver,
+  SkillResolutionError,
+  type ResolvedSkill,
+  type SkillResolveOptions,
+} from "./skills/SkillResolver.js";
+export { mergeSkillIds } from "./skills/mergeSkillIds.js";
+export { parseSkillMarkdown } from "./skills/parseSkillMarkdown.js";
 
 export {
   agentTypeSchema,
