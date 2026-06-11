@@ -8,7 +8,7 @@ import { Orchestrator } from "./orchestrator/Orchestrator.js";
 import { ConsoleRunProgress, noopRunProgress } from "./orchestrator/RunProgress.js";
 import { RunState } from "./orchestrator/RunState.js";
 import { parseWorkflowFile } from "./schemas/workflow.schema.js";
-import { CloudRepoUrlRequiredError } from "./util/resolveRepoUrl.js";
+import { CloudRepoUrlRequiredError, InvalidGitHubRepoUrlError } from "./util/resolveRepoUrl.js";
 
 const program = new Command();
 
@@ -71,10 +71,8 @@ program
         runId: opts.runId,
       });
     } catch (err) {
-      if (err instanceof CloudRepoUrlRequiredError) {
-        console.error(
-          "Cloud mode requires a Git repository URL. Pass --repo-url or run against a git clone with origin configured.",
-        );
+      if (err instanceof CloudRepoUrlRequiredError || err instanceof InvalidGitHubRepoUrlError) {
+        console.error(err.message);
         process.exit(1);
       }
       throw err;

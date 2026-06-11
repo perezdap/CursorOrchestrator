@@ -83,4 +83,11 @@ CLI flags and workflow `inputs` merge into run state:
 orchestrator run -w .\workflow.yaml -t "Fix login bug" -r C:\repos\my-app
 ```
 
-`repoPath` becomes the workspace root for policies and artifact resolution.
+| Input / flag | Role |
+|--------------|------|
+| `task` / `-t` | Task description passed to agents |
+| `repoPath` / `-r` | Local workspace root for policies, acceptance checks, and artifacts |
+| `executionMode` / `-m` | `local` (default) or `cloud` |
+| `repoUrl` / `--repo-url` | GitHub URL for cloud agents only; auto-detected from `origin` when omitted |
+
+`repoPath` is always the local checkout. In cloud mode, agents clone `repoUrl` on a Cursor-hosted VM while acceptance checks still run locally against `repoPath`. See [getting-started.md](getting-started.md#cloud-execution).

@@ -38,7 +38,7 @@ Cloud agents run on Cursor-hosted VMs against a **GitHub repository**, not your 
 
 ```powershell
 orchestrator run `
-  --workflow .\workflows\generic-task.workflow.yaml `
+  --workflow .\src\examples\generic-task.workflow.yaml `
   --task "Add CLI parsing tests" `
   --repo-path C:\path\to\your\repo `
   --execution-mode cloud
@@ -48,9 +48,20 @@ When `--execution-mode cloud` is set:
 
 - **`--repo-url`** — optional explicit GitHub remote (HTTPS or SSH). Normalized to `https://github.com/org/repo` for the Cursor SDK.
 - **Auto-detect** — if `--repo-url` is omitted, `Orchestrator.run()` reads `git remote get-url origin` from `repoPath` and converts `git@github.com:org/repo.git` to HTTPS.
-- **Failure** — cloud mode throws before phases start if no GitHub URL can be resolved (CLI and library callers share this path).
+- **Failure** — cloud mode throws before phases start if no GitHub URL can be resolved (CLI and library callers share this path). Non-GitHub remotes (for example GitLab) are rejected.
 
 Push your branch before a cloud run so agents work against the latest remote state, then pull locally before acceptance passes.
+
+Explicit URL example:
+
+```powershell
+orchestrator run `
+  --workflow .\src\examples\generic-task.workflow.yaml `
+  --task "Add CLI parsing tests" `
+  --repo-path C:\path\to\your\repo `
+  --repo-url https://github.com/org/repo `
+  --execution-mode cloud
+```
 
 ## Initialize a project
 
