@@ -14,6 +14,11 @@ import { Run, type RunWorkflowResult } from "./Run.js";
 import { generateRunId, RunState } from "./RunState.js";
 import { TaskGraph } from "./TaskGraph.js";
 import { noopRunProgress, type RunProgressReporter } from "./RunProgress.js";
+import {
+  CloudRepoUrlRequiredError,
+  resolveRunRepoUrl,
+  type ResolveRunRepoUrlResult,
+} from "../util/resolveRepoUrl.js";
 
 export type { RunWorkflowResult } from "./Run.js";
 export type { RunContext } from "./Run.js";
@@ -76,9 +81,11 @@ export class Orchestrator {
     const registry = new AgentRegistry();
     registry.registerWorkflowAgents(input.workflow.agents);
 
-    const taskInputs = this.normalizeInputs(input.workflow, input.inputs);
+    let taskInputs = this.normalizeInputs(input.workflow, input.inputs);
     const cwd = String(taskInputs.repoPath ?? this.cwd);
     const executionMode = this.resolveRunExecutionMode(taskInputs);
+    const resolvedRepo = this.resolveCloudRepoUrl(cwd, executionMode, taskInputs);
+    taskInputs = this.applyCloudRepoUrl(taskInputs, executionMode, resolvedRepo);
 
     let runState: RunState;
     if (input.resume && input.runId) {
@@ -108,6 +115,8 @@ export class Orchestrator {
       progress: this.progress,
       dryRun: this.dryRun,
       executionMode,
+      repoUrl: resolvedRepo.repoUrl,
+      repoUrlSource: resolvedRepo.source,
     });
 
     return run.execute(input.workflow, executionOrder);
@@ -188,6 +197,43 @@ export class Orchestrator {
       ...(workflow.inputs ?? {}),
       ...(inputs ?? {}),
     };
+  }
+
+  private resolveCloudRepoUrl(
+    repoPath: string,
+    executionMode: ExecutionMode,
+    inputs: Record<string, unknown>,
+  ): ResolveRunRepoUrlResult {
+    if (executionMode !== "cloud") {
+      return {};
+    }
+
+    const repoUrl = typeof inputs.repoUrl === "string" ? inputs.repoUrl : undefined;
+    const resolved = resolveRunRepoUrl({ repoPath, executionMode: "cloud", repoUrl });
+
+    if (!resolved.repoUrl) {
+      throw new CloudRepoUrlRequiredError();
+    }
+
+    return resolved;
+  }
+
+  private applyCloudRepoUrl(
+    inputs: Record<string, unknown>,
+    executionMode: ExecutionMode,
+    resolved: ResolveRunRepoUrlResult,
+  ): Record<string, unknown> {
+    if (executionMode !== "cloud") {
+      const withoutRepoUrl = { ...inputs };
+      delete withoutRepoUrl.repoUrl;
+      return withoutRepoUrl;
+    }
+
+    if (!resolved.repoUrl) {
+      return inputs;
+    }
+
+    return { ...inputs, repoUrl: resolved.repoUrl };
   }
 
   private toStringContext(inputs: Record<string, unknown>): Record<string, string> {

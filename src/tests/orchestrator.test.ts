@@ -6,6 +6,7 @@ import { ApprovalPolicy } from "../policies/approvalPolicy.js";
 import { AgentRegistry } from "../orchestrator/AgentRegistry.js";
 import { AcceptanceRunner } from "../orchestrator/AcceptanceRunner.js";
 import { Orchestrator } from "../orchestrator/Orchestrator.js";
+import { CloudRepoUrlRequiredError } from "../util/resolveRepoUrl.js";
 import { TaskGraph } from "../orchestrator/TaskGraph.js";
 import { MockAgentRunner } from "../runners/mockRunner.js";
 import { NodeShellRunner } from "../runners/shellRunner.js";
@@ -141,6 +142,22 @@ describe("AcceptanceRunner", () => {
 });
 
 describe("Orchestrator", () => {
+  it("throws when cloud mode has no resolvable repository URL", async () => {
+    const cwd = createTempCwd();
+    const orchestrator = new Orchestrator({
+      cwd,
+      executionMode: "cloud",
+      agentRunner: new MockAgentRunner(),
+    });
+
+    await expect(
+      orchestrator.run({
+        workflow: testWorkflow,
+        inputs: { task: "Cloud test", repoPath: cwd, executionMode: "cloud" },
+      }),
+    ).rejects.toThrow(CloudRepoUrlRequiredError);
+  });
+
   it("completes a full workflow with mocked agent runner", async () => {
     const cwd = createTempCwd();
     const mockRunner = new MockAgentRunner();

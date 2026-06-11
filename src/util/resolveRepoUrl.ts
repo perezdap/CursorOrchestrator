@@ -1,5 +1,23 @@
 import { execFileSync } from "node:child_process";
 
+const GITHUB_HTTPS_PATTERN = /^https:\/\/github\.com\/[^/]+\/[^/]+$/i;
+
+export class CloudRepoUrlRequiredError extends Error {
+  constructor() {
+    super(
+      "Cloud mode requires a GitHub repository URL. Pass repoUrl or run against a git clone with origin configured.",
+    );
+    this.name = "CloudRepoUrlRequiredError";
+  }
+}
+
+export class InvalidGitHubRepoUrlError extends Error {
+  constructor(url: string) {
+    super(`Cloud mode requires a GitHub repository URL (HTTPS). Got: ${url}`);
+    this.name = "InvalidGitHubRepoUrlError";
+  }
+}
+
 export function normalizeGitRemoteUrl(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) {
@@ -23,6 +41,13 @@ export function normalizeGitRemoteUrl(raw: string): string {
   return trimmed;
 }
 
+function assertGitHubRepoUrl(url: string): string {
+  if (!GITHUB_HTTPS_PATTERN.test(url)) {
+    throw new InvalidGitHubRepoUrlError(url);
+  }
+  return url;
+}
+
 export function detectGitRemoteUrl(
   repoPath: string,
   remote = "origin",
@@ -37,8 +62,11 @@ export function detectGitRemoteUrl(
       },
     );
     const url = output.trim();
-    return url ? normalizeGitRemoteUrl(url) : undefined;
-  } catch {
+    return url ? assertGitHubRepoUrl(normalizeGitRemoteUrl(url)) : undefined;
+  } catch (error) {
+    if (error instanceof InvalidGitHubRepoUrlError) {
+      throw error;
+    }
     return undefined;
   }
 }
@@ -57,18 +85,20 @@ export interface ResolveRunRepoUrlResult {
 export function resolveRunRepoUrl(
   options: ResolveRunRepoUrlOptions,
 ): ResolveRunRepoUrlResult {
+  if (options.executionMode !== "cloud") {
+    return {};
+  }
+
   if (options.repoUrl?.trim()) {
     return {
-      repoUrl: normalizeGitRemoteUrl(options.repoUrl),
+      repoUrl: assertGitHubRepoUrl(normalizeGitRemoteUrl(options.repoUrl)),
       source: "flag",
     };
   }
 
-  if (options.executionMode === "cloud") {
-    const detected = detectGitRemoteUrl(options.repoPath);
-    if (detected) {
-      return { repoUrl: detected, source: "git" };
-    }
+  const detected = detectGitRemoteUrl(options.repoPath);
+  if (detected) {
+    return { repoUrl: detected, source: "git" };
   }
 
   return {};

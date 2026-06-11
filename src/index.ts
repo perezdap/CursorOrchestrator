@@ -87,9 +87,6 @@ export {
 } from "./policies/PolicyGate.js";
 
 export {
-  detectGitRemoteUrl,
-  normalizeGitRemoteUrl,
-  resolveRunRepoUrl,
-  type ResolveRunRepoUrlOptions,
-  type ResolveRunRepoUrlResult,
+  CloudRepoUrlRequiredError,
+  InvalidGitHubRepoUrlError,
 } from "./util/resolveRepoUrl.js";

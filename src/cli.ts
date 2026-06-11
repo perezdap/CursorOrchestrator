@@ -8,7 +8,7 @@ import { Orchestrator } from "./orchestrator/Orchestrator.js";
 import { ConsoleRunProgress, noopRunProgress } from "./orchestrator/RunProgress.js";
 import { RunState } from "./orchestrator/RunState.js";
 import { parseWorkflowFile } from "./schemas/workflow.schema.js";
-import { resolveRunRepoUrl } from "./util/resolveRepoUrl.js";
+import { CloudRepoUrlRequiredError } from "./util/resolveRepoUrl.js";
 
 const program = new Command();
 
@@ -49,23 +49,6 @@ program
 
     const repoPath = resolve(opts.repoPath);
     const executionMode = opts.executionMode === "cloud" ? "cloud" : "local";
-    const { repoUrl, source } = resolveRunRepoUrl({
-      repoPath,
-      executionMode,
-      repoUrl: opts.repoUrl,
-    });
-
-    if (executionMode === "cloud" && !repoUrl) {
-      console.error(
-        "Cloud mode requires a Git repository URL. Pass --repo-url or run against a git clone with origin configured.",
-      );
-      process.exit(1);
-    }
-
-    if (repoUrl && !opts.quiet) {
-      const via = source === "git" ? "auto-detected from origin" : "from --repo-url";
-      console.error(`[orchestrator] Cloud repository (${via}): ${repoUrl}`);
-    }
 
     const workflow = parseWorkflowFile(workflowPath);
     const orchestrator = new Orchestrator({
@@ -75,16 +58,27 @@ program
       progress: opts.quiet ? noopRunProgress : new ConsoleRunProgress(),
     });
 
-    const result = await orchestrator.run({
-      workflow,
-      inputs: {
-        task: opts.task,
-        repoPath,
-        repoUrl,
-        executionMode,
-      },
-      runId: opts.runId,
-    });
+    let result;
+    try {
+      result = await orchestrator.run({
+        workflow,
+        inputs: {
+          task: opts.task,
+          repoPath,
+          repoUrl: opts.repoUrl,
+          executionMode,
+        },
+        runId: opts.runId,
+      });
+    } catch (err) {
+      if (err instanceof CloudRepoUrlRequiredError) {
+        console.error(
+          "Cloud mode requires a Git repository URL. Pass --repo-url or run against a git clone with origin configured.",
+        );
+        process.exit(1);
+      }
+      throw err;
+    }
 
     console.log(`Run ID: ${result.runId}`);
     console.log(`Run directory: ${result.runDir}`);
