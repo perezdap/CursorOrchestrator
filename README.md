@@ -57,7 +57,16 @@ Copy-Item .\workflows\generic-task.workflow.yaml .\workflows\my-task.workflow.ya
 orchestrator validate --workflow .\workflows\my-task.workflow.yaml
 ```
 
-See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/` (for example `winget-psadt-package.workflow.yaml` for Windows packaging).
+See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/`:
+
+| Example | Use case |
+|---------|----------|
+| `generic-task.workflow.yaml` | Plan → implement → review → verify |
+| `winget-psadt-package.workflow.yaml` | Windows packaging (winget + PSADT/Intune) |
+| `repo-review.workflow.yaml` | Research and review pipeline |
+| `tdd-feature.workflow.yaml` | Test-driven feature implementation (tests first) |
+| `safe-refactor.workflow.yaml` | Behaviour-preserving refactoring with safety checks |
+| `project-setup.workflow.yaml` | Scaffold a new project with CI and documentation |
 
 ## Run a workflow
 

@@ -60,6 +60,9 @@ acceptance:
 | `generic-task.workflow.yaml` | Plan → implement → review → verify |
 | `winget-psadt-package.workflow.yaml` | Windows packaging with Pester |
 | `repo-review.workflow.yaml` | Research and review pipeline |
+| `tdd-feature.workflow.yaml` | Test-driven feature implementation (tests first) |
+| `safe-refactor.workflow.yaml` | Behaviour-preserving refactoring with safety checks |
+| `project-setup.workflow.yaml` | Scaffold a new project with CI and documentation |
 
 ## Validation
 
