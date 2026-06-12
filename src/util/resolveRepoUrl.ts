@@ -5,7 +5,7 @@ const GITHUB_HTTPS_PATTERN = /^https:\/\/github\.com\/[^/]+\/[^/]+$/i;
 export class CloudRepoUrlRequiredError extends Error {
   constructor() {
     super(
-      "Cloud mode requires a GitHub repository URL. Pass repoUrl or run against a git clone with origin configured.",
+      "Cloud mode requires a GitHub repository URL. Pass --repo-url (CLI) or repoUrl (library), or run against a git clone with origin configured.",
     );
     this.name = "CloudRepoUrlRequiredError";
   }
@@ -24,18 +24,18 @@ export function normalizeGitRemoteUrl(raw: string): string {
     return trimmed;
   }
 
-  const scpMatch = /^git@([^:]+):(.+?)(?:\.git)?$/i.exec(trimmed);
+  const scpMatch = /^git@([^:]+):(.+?)(?:\.git)?\/?$/i.exec(trimmed);
   if (scpMatch) {
     return `https://${scpMatch[1]}/${scpMatch[2]}`;
   }
 
-  const sshUrlMatch = /^ssh:\/\/git@([^/]+)\/(.+?)(?:\.git)?$/i.exec(trimmed);
+  const sshUrlMatch = /^ssh:\/\/(?:git@)?([^/]+)\/(.+?)(?:\.git)?\/?$/i.exec(trimmed);
   if (sshUrlMatch) {
     return `https://${sshUrlMatch[1]}/${sshUrlMatch[2]}`;
   }
 
   if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed.replace(/\.git$/i, "");
+    return trimmed.replace(/\/+$/i, "").replace(/\.git$/i, "");
   }
 
   return trimmed;

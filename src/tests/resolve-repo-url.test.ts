@@ -23,6 +23,12 @@ describe("normalizeGitRemoteUrl", () => {
     );
   });
 
+  it("converts ssh:// remotes without git@ to HTTPS", () => {
+    expect(normalizeGitRemoteUrl("ssh://github.com/perezdap/repo.git")).toBe(
+      "https://github.com/perezdap/repo",
+    );
+  });
+
   it("strips .git from HTTPS remotes", () => {
     expect(normalizeGitRemoteUrl("https://github.com/perezdap/example.git")).toBe(
       "https://github.com/perezdap/example",
@@ -31,6 +37,18 @@ describe("normalizeGitRemoteUrl", () => {
 
   it("preserves HTTPS remotes without .git suffix", () => {
     expect(normalizeGitRemoteUrl("https://github.com/perezdap/repo")).toBe(
+      "https://github.com/perezdap/repo",
+    );
+  });
+
+  it("strips trailing slashes from HTTPS remotes", () => {
+    expect(normalizeGitRemoteUrl("https://github.com/perezdap/repo/")).toBe(
+      "https://github.com/perezdap/repo",
+    );
+  });
+
+  it("strips both .git suffix and trailing slash from HTTPS remotes", () => {
+    expect(normalizeGitRemoteUrl("https://github.com/perezdap/repo.git/")).toBe(
       "https://github.com/perezdap/repo",
     );
   });
