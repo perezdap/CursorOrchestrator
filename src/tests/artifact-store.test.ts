@@ -58,9 +58,8 @@ describe("ArtifactStore", () => {
   });
 
   it("throws when copying files outside workspace", () => {
-    const { store } = createStore();
-    expect(() => store.copyExternalToArtifact("C:\\Outside\\secret.txt")).toThrow(
-      /blocked/i,
-    );
+    const { store, workspace } = createStore();
+    const outsidePath = join(workspace, "..", "outside-workspace", "secret.txt");
+    expect(() => store.copyExternalToArtifact(outsidePath)).toThrow(/blocked/i);
   });
 });
