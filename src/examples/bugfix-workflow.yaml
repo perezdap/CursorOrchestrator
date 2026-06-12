@@ -1,0 +1,38 @@
+name: Intelligent Bug Fix Cycle
+version: 1.0
+
+description: Reproduce, diagnose, fix, test, and verify a bug report.
+
+phases:
+  - name: reproduce
+    agent: qa-engineer
+    task: Reproduce the bug using provided steps or create test case to demonstrate it.
+    acceptance_criteria:
+      - type: shell
+        command: npm test -- --grep bug
+
+  - name: diagnose
+    agent: debugger
+    depends_on: [reproduce]
+    task: Analyze logs, stack traces, and code to identify root cause.
+    acceptance_criteria:
+      - type: file_exists
+        path: docs/root-cause-analysis.md
+
+  - name: fix
+    agent: coder
+    depends_on: [diagnose]
+    task: Implement the minimal fix and add regression test.
+    acceptance_criteria:
+      - type: test_parser
+        framework: vitest
+      - type: shell
+        command: git diff --name-only | grep -q fixed-file
+
+  - name: verify
+    agent: reviewer
+    depends_on: [fix]
+    task: Full verification and approval.
+    acceptance_criteria:
+      - type: manual_approval
+
