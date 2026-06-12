@@ -58,6 +58,8 @@ acceptance:
 | File | Use case |
 |------|----------|
 | `generic-task.workflow.yaml` | Plan → implement → review → verify |
+| `bug-fix.workflow.yaml` | Diagnose, fix, test, and verify a bug |
+| `new-react-component.workflow.yaml` | Design, implement, test, and document a React component |
 | `winget-psadt-package.workflow.yaml` | Windows packaging with Pester |
 | `repo-review.workflow.yaml` | Research and review pipeline |
 
