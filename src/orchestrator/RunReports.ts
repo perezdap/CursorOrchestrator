@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { AcceptanceReport } from "../schemas/acceptance.schema.js";
 import type { PhaseRunRecord } from "../schemas/task.schema.js";
+import { formatRunFailure, type RunFailure } from "./RunErrors.js";
 
 export function formatAcceptanceReportMarkdown(report: AcceptanceReport): string {
   return [
@@ -26,6 +27,7 @@ export interface FinalReportInput {
   phases: PhaseRunRecord[];
   success: boolean;
   error?: string;
+  failure?: RunFailure;
 }
 
 export function formatFinalReport(input: FinalReportInput): string {
@@ -41,10 +43,27 @@ export function formatFinalReport(input: FinalReportInput): string {
   ];
 
   for (const phase of input.phases) {
-    lines.push(`- ${phase.phaseId}: ${phase.status} (attempts: ${phase.attempts})`);
+    const artifacts =
+      phase.artifacts.length > 0 ? `, artifacts: ${phase.artifacts.join(", ")}` : "";
+    const phaseError = phase.error ? `, error: ${phase.error}` : "";
+    lines.push(
+      `- ${phase.phaseId}: ${phase.status} (attempts: ${phase.attempts})${artifacts}${phaseError}`,
+    );
   }
 
-  if (input.error) {
+  const incomplete = input.phases.filter(
+    (p) => p.status !== "completed" && p.status !== "skipped",
+  );
+  if (!input.success && incomplete.length > 0) {
+    lines.push("", "## Partial progress");
+    lines.push(
+      `${input.phases.length - incomplete.length}/${input.phases.length} phases finished before abort.`,
+    );
+  }
+
+  if (input.failure) {
+    lines.push("", "## Failure", formatRunFailure(input.failure));
+  } else if (input.error) {
     lines.push("", "## Error", input.error);
   }
 

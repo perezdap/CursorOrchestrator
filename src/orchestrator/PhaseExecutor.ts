@@ -2,6 +2,7 @@ import type { AgentConfig } from "../schemas/agent.schema.js";
 import type { Phase } from "../schemas/task.schema.js";
 import { AcceptanceGate } from "./AcceptanceGate.js";
 import type { AcceptanceRunner } from "./AcceptanceRunner.js";
+import { createPhaseFailure, type RunFailure } from "./RunErrors.js";
 import type { PhaseRunner } from "./PhaseRunner.js";
 import { startHeartbeat, type RunProgressReporter } from "./RunProgress.js";
 import type { RunState } from "./RunState.js";
@@ -22,6 +23,7 @@ export interface PhaseExecutionMeta {
 export interface PhaseExecutionResult {
   success: boolean;
   error?: string;
+  failure?: RunFailure;
 }
 
 export class PhaseExecutor {
@@ -69,6 +71,13 @@ export class PhaseExecutor {
     let outcome;
     try {
       outcome = await this.options.phaseRunner.runPhase(phase, agentConfig);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        success: false,
+        error: message,
+        failure: createPhaseFailure("agent_exception", phase.id, message),
+      };
     } finally {
       stopHeartbeat();
     }
@@ -84,6 +93,7 @@ export class PhaseExecutor {
       return {
         success: false,
         error: outcome.error,
+        failure: outcome.failure,
       };
     }
 
@@ -119,9 +129,15 @@ export class PhaseExecutor {
       });
 
       if (!acceptance.passed) {
+        const failure = createPhaseFailure(
+          "phase_acceptance",
+          phase.id,
+          "Phase acceptance criteria failed",
+        );
         return {
           success: false,
-          error: "Phase acceptance criteria failed",
+          error: failure.message,
+          failure,
         };
       }
     }

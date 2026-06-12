@@ -10,6 +10,7 @@ import { AcceptanceRunner } from "./AcceptanceRunner.js";
 import { AgentRegistry } from "./AgentRegistry.js";
 import { ArtifactStore } from "./ArtifactStore.js";
 import { PhaseRunner } from "./PhaseRunner.js";
+import { prepareRunForResume } from "./RunRecovery.js";
 import { Run, type RunWorkflowResult } from "./Run.js";
 import { generateRunId, RunState } from "./RunState.js";
 import { TaskGraph } from "./TaskGraph.js";
@@ -88,9 +89,11 @@ export class Orchestrator {
     taskInputs = this.applyCloudRepoUrl(taskInputs, executionMode, resolvedRepo);
 
     let runState: RunState;
+    let recoverySummary;
     if (input.resume && input.runId) {
       const runDir = RunState.findRunDir(cwd, input.runId);
       runState = RunState.load(runDir);
+      recoverySummary = prepareRunForResume(runState);
     } else {
       const runId = input.runId ?? generateRunId();
       runState = RunState.createNew(runId, input.workflow, cwd, taskInputs);
@@ -118,6 +121,10 @@ export class Orchestrator {
       repoUrl: resolvedRepo.repoUrl,
       repoUrlSource: resolvedRepo.source,
     });
+
+    if (recoverySummary && recoverySummary.resumablePhaseIds.length === 0) {
+      ctx.runState.appendPhaseLog("Resume skipped — all phases already completed");
+    }
 
     return run.execute(input.workflow, executionOrder);
   }

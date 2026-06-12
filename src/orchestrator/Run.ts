@@ -6,6 +6,8 @@ import type { AcceptanceRunner } from "./AcceptanceRunner.js";
 import type { AgentRegistry } from "./AgentRegistry.js";
 import { PhaseExecutor } from "./PhaseExecutor.js";
 import type { PhaseRunner } from "./PhaseRunner.js";
+import { createWorkflowFailure, failureMessage, type RunFailure } from "./RunErrors.js";
+import { logPartialResults } from "./RunRecovery.js";
 import { formatFinalReport } from "./RunReports.js";
 import type { RunProgressReporter } from "./RunProgress.js";
 import type { RunState } from "./RunState.js";
@@ -18,6 +20,7 @@ export interface RunWorkflowResult {
   phasesCompleted: number;
   phasesTotal: number;
   message: string;
+  failure?: RunFailure;
 }
 
 export interface RunContext {
@@ -84,12 +87,20 @@ export class Run {
       });
 
       if (!result.success) {
+        const failure =
+          result.failure ??
+          ({
+            scope: "phase",
+            kind: "agent_execution",
+            phaseId: phase.id,
+            message: result.error ?? "unknown",
+          } satisfies RunFailure);
         const message =
-          result.error === "Phase acceptance criteria failed"
+          failure.kind === "phase_acceptance"
             ? `Phase "${phase.id}" acceptance failed`
             : `Phase "${phase.id}" failed: ${result.error ?? "unknown"}`;
         return this.failRun(executionOrder.length, phasesCompleted, {
-          error: result.error,
+          failure,
           message,
         });
       }
@@ -147,13 +158,23 @@ export class Run {
     }
 
     const finalStatus = acceptancePassed ? "completed" : "failed";
-    const message = acceptancePassed
-      ? "Workflow completed successfully"
-      : "Workflow failed acceptance after retries";
+    let workflowFailure: RunFailure | undefined;
+    let message: string;
+    if (acceptancePassed) {
+      message = "Workflow completed successfully";
+    } else {
+      workflowFailure = createWorkflowFailure("Workflow failed acceptance after retries");
+      message = workflowFailure.message;
+    }
 
     runState.setStatus(finalStatus);
     runState.setCurrentPhase(undefined);
-    runState.writeFinalReport(this.buildFinalReport(acceptancePassed));
+
+    if (!acceptancePassed) {
+      logPartialResults(runState, workflowFailure);
+    }
+
+    runState.writeFinalReport(this.buildFinalReport(acceptancePassed, workflowFailure));
 
     progress.workflowFinished({
       runId: runState.runId,
@@ -170,6 +191,7 @@ export class Run {
       phasesCompleted,
       phasesTotal: executionOrder.length,
       message,
+      failure: workflowFailure,
     };
   }
 
@@ -188,13 +210,15 @@ export class Run {
   private failRun(
     phasesTotal: number,
     phasesCompleted: number,
-    params: { error?: string; message: string },
+    params: { failure: RunFailure; message: string },
   ): RunWorkflowResult {
     const { runState, progress } = this.options;
 
+    logPartialResults(runState, params.failure);
+
     runState.setStatus("failed");
     runState.setCurrentPhase(undefined);
-    runState.writeFinalReport(this.buildFinalReport(false, params.error));
+    runState.writeFinalReport(this.buildFinalReport(false, params.failure));
 
     progress.workflowFinished({
       runId: runState.runId,
@@ -211,10 +235,11 @@ export class Run {
       phasesCompleted,
       phasesTotal,
       message: params.message,
+      failure: params.failure,
     };
   }
 
-  private buildFinalReport(success: boolean, error?: string): string {
+  private buildFinalReport(success: boolean, failure?: RunFailure): string {
     const data = this.options.runState.toJSON();
     return formatFinalReport({
       runId: data.runId,
@@ -223,7 +248,8 @@ export class Run {
       runDir: this.options.runState.runDir,
       phases: data.phases,
       success,
-      error,
+      failure,
+      error: failure ? failureMessage(failure) : undefined,
     });
   }
 }

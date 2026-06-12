@@ -62,6 +62,32 @@ describe("RunReports", () => {
       expect(markdown).toContain("Acceptance criteria failed");
     });
 
+    it("includes partial progress and structured failure when provided", () => {
+      const markdown = formatFinalReport({
+        runId: "run-3",
+        workflowName: "demo",
+        updatedAt: "2026-06-10T12:00:00.000Z",
+        runDir: "C:\\Projects\\app\\.runs\\run-3",
+        success: false,
+        failure: {
+          scope: "phase",
+          kind: "agent_execution",
+          phaseId: "implement",
+          message: "Agent execution failed",
+        },
+        phases: [
+          { phaseId: "plan", status: "completed", attempts: 1, artifacts: ["plan.md"] },
+          { phaseId: "implement", status: "failed", attempts: 2, artifacts: [], error: "timeout" },
+        ],
+      });
+
+      expect(markdown).toContain("## Partial progress");
+      expect(markdown).toContain("## Failure");
+      expect(markdown).toContain("[phase/agent_execution]");
+      expect(markdown).toContain("artifacts: plan.md");
+      expect(markdown).toContain("error: timeout");
+    });
+
     it("shows completed status without error section", () => {
       const markdown = formatFinalReport({
         runId: "run-2",

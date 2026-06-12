@@ -218,9 +218,11 @@ For threat model, cloud vs local guidance, and policy scope, see [security.md](s
 | Policy rule | `src/policies/` (`PolicyGate` for enforcement at call sites) |
 | Workflow | YAML under `src/examples/` or `workflows/` |
 
-## Resumption
+## Resumption and error recovery
 
-`state.json` tracks per-phase status. `orchestrator resume` skips completed/skipped phases and continues from pending work.
+`state.json` tracks per-phase status. `orchestrator resume` skips completed/skipped phases and continues from pending work. Interrupted phases (`running` / `retrying`) are reset to `pending` before the walk restarts.
+
+Failures are classified by scope (`phase` vs `workflow`) and kind (agent execution, exception, acceptance). See [error-recovery.md](error-recovery.md) for the full model, partial-progress logging, and resume semantics.
 
 ## Safety
 
