@@ -72,6 +72,8 @@ orchestrator run `
 
 Progress lines print to stderr by default (`[orchestrator] [1/4] Phase intake … running`). Use `--quiet` to suppress them.
 
+Cloud agents run against a **GitHub** repository URL (`--repo-url` or auto-detected `origin`), not your local folder. Acceptance checks still use `--repo-path`. See [Cloud execution](docs/getting-started.md#cloud-execution).
+
 Resume a run:
 
 ```powershell

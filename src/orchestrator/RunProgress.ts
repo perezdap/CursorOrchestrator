@@ -4,6 +4,8 @@ export interface WorkflowStartedEvent {
   phasesTotal: number;
   executionMode: string;
   dryRun: boolean;
+  repoUrl?: string;
+  repoUrlSource?: "flag" | "git";
 }
 
 export interface PhaseStartedEvent {
@@ -104,6 +106,11 @@ export class ConsoleRunProgress implements RunProgressReporter {
     this.write(
       `${prefix()} Run ${event.runId} started — ${event.workflowName} (${event.phasesTotal} phases, ${mode})`,
     );
+    if (event.repoUrl) {
+      const via =
+        event.repoUrlSource === "git" ? "auto-detected from origin" : "from --repo-url";
+      this.write(`${prefix()} Cloud repository (${via}): ${event.repoUrl}`);
+    }
   }
 
   phaseStarted(event: PhaseStartedEvent): void {

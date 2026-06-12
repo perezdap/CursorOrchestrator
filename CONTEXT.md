@@ -22,6 +22,10 @@ A configured role (planner, implementer, reviewer, etc.) invoked through an agen
 
 The seam where phase work is executed. Adapters include Cursor local, Cursor cloud, mock, and future custom runners.
 
+## Cloud repository URL (`repoUrl`)
+
+GitHub HTTPS URL passed to cloud agents via `CursorCloudRunner` (`cloud.repos`). Resolved by `Orchestrator.run()` from the `repoUrl` input or auto-detected from `git remote get-url origin` on `repoPath`. Required when `executionMode` is `cloud`; non-GitHub remotes are rejected.
+
 ## Acceptance Gate
 
 The module that evaluates acceptance criteria with a retry policy and optional remediation between attempts. Produces a verdict and persisted reports.

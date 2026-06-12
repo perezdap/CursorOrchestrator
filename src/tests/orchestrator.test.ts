@@ -1,4 +1,5 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
@@ -6,6 +7,7 @@ import { ApprovalPolicy } from "../policies/approvalPolicy.js";
 import { AgentRegistry } from "../orchestrator/AgentRegistry.js";
 import { AcceptanceRunner } from "../orchestrator/AcceptanceRunner.js";
 import { Orchestrator } from "../orchestrator/Orchestrator.js";
+import { CloudRepoUrlRequiredError } from "../util/resolveRepoUrl.js";
 import { TaskGraph } from "../orchestrator/TaskGraph.js";
 import { MockAgentRunner } from "../runners/mockRunner.js";
 import { NodeShellRunner } from "../runners/shellRunner.js";
@@ -141,6 +143,64 @@ describe("AcceptanceRunner", () => {
 });
 
 describe("Orchestrator", () => {
+  it("throws when cloud mode has no resolvable repository URL", async () => {
+    const cwd = createTempCwd();
+    const orchestrator = new Orchestrator({
+      cwd,
+      executionMode: "cloud",
+      agentRunner: new MockAgentRunner(),
+    });
+
+    await expect(
+      orchestrator.run({
+        workflow: testWorkflow,
+        inputs: { task: "Cloud test", repoPath: cwd, executionMode: "cloud" },
+      }),
+    ).rejects.toThrow(CloudRepoUrlRequiredError);
+  });
+
+  it("completes a cloud workflow when repoUrl is auto-detected from origin", async () => {
+    const cwd = createTempCwd();
+    execFileSync("git", ["init"], { cwd });
+    execFileSync(
+      "git",
+      ["remote", "add", "origin", "git@github.com:example/project.git"],
+      { cwd },
+    );
+
+    const mockRunner = new MockAgentRunner();
+    for (const phase of testWorkflow.phases) {
+      mockRunner.setResponse(phase.id, {
+        phaseId: phase.id,
+        result: `Completed ${phase.id}`,
+        success: true,
+        artifacts:
+          phase.id === "intake"
+            ? {
+                "plan.md": "# Plan\n\nTest plan for mock workflow.",
+                "acceptance.md": "# Acceptance\n\n- Tests pass",
+              }
+            : undefined,
+      });
+    }
+
+    const orchestrator = new Orchestrator({
+      cwd,
+      executionMode: "cloud",
+      agentRunner: mockRunner,
+      approvalPolicy: new ApprovalPolicy({ autoApproveInTests: true, autoApproveManualChecks: true }),
+      shellRunner: new NodeShellRunner({ enforcePolicy: false }),
+    });
+
+    const result = await orchestrator.run({
+      workflow: testWorkflow,
+      inputs: { task: "Cloud auto-detect test", repoPath: cwd, executionMode: "cloud" },
+    });
+
+    expect(result.status).toBe("completed");
+    expect(result.phasesCompleted).toBe(4);
+  });
+
   it("completes a full workflow with mocked agent runner", async () => {
     const cwd = createTempCwd();
     const mockRunner = new MockAgentRunner();

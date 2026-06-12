@@ -31,6 +31,8 @@ export interface RunContext {
 
 export interface RunOptions extends RunContext {
   executionMode: ExecutionMode;
+  repoUrl?: string;
+  repoUrlSource?: "flag" | "git";
 }
 
 export class Run {
@@ -60,6 +62,8 @@ export class Run {
       phasesTotal: executionOrder.length,
       executionMode: this.options.executionMode,
       dryRun,
+      repoUrl: this.options.repoUrl,
+      repoUrlSource: this.options.repoUrlSource,
     });
 
     let phasesCompleted = 0;

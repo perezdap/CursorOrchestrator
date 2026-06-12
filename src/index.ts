@@ -85,3 +85,8 @@ export {
   type ShellCommandBlock,
   type FileOperation,
 } from "./policies/PolicyGate.js";
+
+export {
+  CloudRepoUrlRequiredError,
+  InvalidGitHubRepoUrlError,
+} from "./util/resolveRepoUrl.js";

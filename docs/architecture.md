@@ -86,6 +86,8 @@ export interface AgentRunner {
 
 The orchestrator calls `getRunner(mode)` — never imports `@cursor/sdk` directly. Cursor runners share `cursorRunnerCore` (SDK lifecycle, error mapping). Phase prompts are composed by `PromptComposer` before the runner is invoked. Local and cloud adapters differ only in `Agent.create` options. Inject `MockAgentRunner` in tests or custom runners for CI.
 
+Before phases start, `Orchestrator.run()` resolves a GitHub `repoUrl` when `executionMode` is `cloud` (`src/util/resolveRepoUrl.ts`). CLI and library callers share this path; cloud runs fail fast when no URL can be resolved.
+
 ## Extension points
 
 | Extend | Location |

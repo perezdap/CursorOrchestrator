@@ -95,9 +95,11 @@ No orchestrator changes required.
 
 | Mode | Runner |
 |------|--------|
-| `local` | `CursorLocalRunner` — uses machine `cwd` |
-| `cloud` | `CursorCloudRunner` — Cursor-hosted VM |
+| `local` | `CursorLocalRunner` — uses machine `cwd` (`--repo-path`) |
+| `cloud` | `CursorCloudRunner` — Cursor-hosted VM cloning `--repo-url` (or auto-detected `origin`) |
 | `auto` | Follows workflow/run `executionMode` default |
+
+Cloud runs require a **GitHub** repository URL. `Orchestrator.run()` resolves `repoUrl` from run inputs or auto-detects `origin` from `repoPath` when `executionMode` is `cloud`; the CLI passes `--repo-url` through as `repoUrl`. Non-GitHub remotes are rejected. The resolved URL is passed to agents as `repoUrl` in run context for `cloud.repos`.
 
 ## Agent messages and artifacts
 
