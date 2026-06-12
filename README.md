@@ -57,7 +57,23 @@ Copy-Item .\workflows\generic-task.workflow.yaml .\workflows\my-task.workflow.ya
 orchestrator validate --workflow .\workflows\my-task.workflow.yaml
 ```
 
-See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/` (for example `winget-psadt-package.workflow.yaml` for Windows packaging).
+See [docs/workflows.md](docs/workflows.md) for the full schema and the [example workflow catalog](docs/workflows.md#example-workflows).
+
+Bundled templates live under `src/examples/` in this repo, or `node_modules/cursor-orchestrator/src/examples/` when installed as a package.
+
+Validate any example before running:
+
+```powershell
+orchestrator validate --workflow .\src\examples\tdd-feature.workflow.yaml
+```
+
+To use one as a starting point for your own workflow:
+
+```powershell
+Copy-Item .\src\examples\tdd-feature.workflow.yaml .\workflows\my-feature.workflow.yaml
+```
+
+When using the installed package, substitute the `node_modules/cursor-orchestrator/src/examples/` path.
 
 ## Run a workflow
 
