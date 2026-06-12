@@ -35,7 +35,7 @@ phases:
   - id: survey
     agent: researcher
     objective: |
-      Scan the repository for security signals: outdated packages, hardcoded secrets,
+      Scan the scope area named in Context for security signals: outdated packages, hardcoded secrets,
       broad file permissions, and dangerous command usage.
     outputs:
       - survey.md
@@ -43,7 +43,7 @@ phases:
   - id: static-audit
     agent: security-reviewer
     objective: |
-      Perform a static security review of the source code identified in the survey.
+      Perform a static security review of the source code within the scope area identified in the survey.
       Document every finding with file path, line reference, severity, and recommended fix.
     dependsOn:
       - survey
@@ -83,11 +83,11 @@ acceptance:
       type: markdown_artifact
       path: remediation-plan.md
       required: true
-    - id: no-critical-secrets
-      type: command
-      command: >-
-        pwsh -NoProfile -ExecutionPolicy Bypass -Command
-        "if (Select-String -Path . -Pattern 'AKIA|AIza|sk-|ghp_' -Recurse -ErrorAction SilentlyContinue) { exit 1 } else { exit 0 }"
+    - id: no-hardcoded-secrets
+      type: agent_review
+      prompt: |
+        Confirm that no API keys, tokens, passwords, or other secrets are hardcoded in source files
+        within the audited scope. Credentials should be read from environment variables or a secrets manager.
       required: true
     - id: security-report-review
       type: agent_review

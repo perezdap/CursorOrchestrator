@@ -133,15 +133,13 @@ acceptance:
       type: markdown_artifact
       path: refactor-summary.md
       required: true
+    - id: security-review-exists
+      type: markdown_artifact
+      path: security-review.md
+      required: true
     - id: no-behaviour-change
       type: agent_review
       prompt: >
         Confirm that the refactored code has no observable behaviour changes: same inputs
         produce the same outputs, public APIs are intact, and no logic was silently dropped.
       required: true
-    - id: no-security-regression
-      type: agent_review
-      prompt: >
-        Confirm that the refactoring introduced no new security vulnerabilities such as
-        missing input validation, altered access control checks, or unsafe command execution.
-      required: false

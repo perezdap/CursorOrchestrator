@@ -1,5 +1,5 @@
 name: api-integration
-description: Design, implement, test, and document a third-party API integration — including authentication, error handling, retry logic, and contract tests.
+description: Design, implement, test, and document a third-party API integration — including authentication, error handling, retry logic, and HTTP contract tests.
 
 inputs:
   apiName: string
@@ -11,7 +11,7 @@ agents:
     type: planner
     model: auto
     instructions: |
-      Analyze the API specification or documentation, identify authentication requirements,
+      Analyze the API specification or documentation for the named API, identify authentication requirements,
       rate-limit constraints, and error scenarios. Produce an integration plan and acceptance criteria.
   implementer:
     type: implementer
@@ -24,7 +24,7 @@ agents:
     model: auto
     instructions: |
       Write unit tests with a mock HTTP layer and contract tests that verify request shape and
-      response parsing. Use Vitest on Node or Pester on PowerShell as appropriate.
+      response parsing against the API specification. Use Vitest on Node or Pester on PowerShell as appropriate.
   reviewer:
     type: reviewer
     model: auto
@@ -42,7 +42,7 @@ phases:
   - id: plan
     agent: planner
     objective: |
-      Review the API specification for the target API. Document auth flow, key endpoints,
+      Review the API specification for the apiName API named in Context. Document auth flow, key endpoints,
       rate limits, error codes, and produce a phased integration plan with acceptance criteria.
     outputs:
       - plan.md
@@ -51,7 +51,7 @@ phases:
   - id: implement
     agent: implementer
     objective: |
-      Implement the API client module. Include authentication, typed request/response
+      Implement the apiName API client module. Include authentication, typed request/response
       models, configurable retry logic (3 attempts, exponential back-off), and structured errors.
     dependsOn:
       - plan
@@ -61,8 +61,8 @@ phases:
   - id: test
     agent: test-writer
     objective: |
-      Write tests covering: successful requests, authentication failure, rate-limit handling,
-      network timeouts, and malformed response parsing.
+      Write contract and unit tests for the apiName client covering: successful requests, authentication failure,
+      rate-limit handling, network timeouts, and malformed response parsing.
     dependsOn:
       - implement
     outputs:
@@ -71,7 +71,7 @@ phases:
   - id: review
     agent: reviewer
     objective: |
-      Review the client and tests for credential safety, resilience under failure conditions,
+      Review the apiName client and contract tests for credential safety, resilience under failure conditions,
       type correctness, and completeness against plan.md.
     dependsOn:
       - test
@@ -79,7 +79,7 @@ phases:
   - id: document
     agent: documenter
     objective: |
-      Write integration documentation covering setup, required environment variables,
+      Write integration documentation for the apiName API covering setup, required environment variables,
       usage examples, error handling guidance, and how to add new endpoints.
     dependsOn:
       - review
@@ -91,8 +91,9 @@ acceptance:
   retryPhase: implement
   criteria:
     - id: tests-pass
-      type: command
+      type: test_result
       command: npm test
+      parser: vitest
       required: true
     - id: plan-exists
       type: markdown_artifact

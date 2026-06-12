@@ -1,5 +1,5 @@
 name: project-setup
-description: Scaffold a new project from scratch — initialise repository structure, toolchain, CI, documentation, and baseline tests so the team can start feature work immediately.
+description: Scaffold a new Node/TypeScript project — initialise repository structure, toolchain, CI, documentation, and baseline Vitest tests so the team can start feature work immediately.
 
 inputs:
   task: string
@@ -11,10 +11,10 @@ agents:
     type: planner
     model: auto
     instructions: |
-      Gather requirements for the new project: language, framework, target platform (default Windows),
-      CI system, testing framework, and coding conventions.
+      Gather requirements for the new Node/TypeScript project: framework, target platform (default Windows),
+      CI system, testing framework (Vitest), and coding conventions.
       Produce a scaffold plan that lists every file and directory to create and the tooling commands
-      to initialise them. Prefer established scaffolding tools (npm init, dotnet new, etc.) over
+      to initialise them. Prefer established scaffolding tools (npm init, create-* CLIs) over
       hand-crafting files. Document decisions in plan.md.
   implementer:
     type: implementer
@@ -27,9 +27,8 @@ agents:
     type: test-writer
     model: auto
     instructions: |
-      Add a minimal but runnable test suite that proves the scaffold is wired correctly:
-      at least one passing test per testing framework configured, a lint/type-check pass,
-      and a build that produces expected output. Use Vitest for TypeScript, Pester for PowerShell.
+      Add a minimal but runnable Vitest suite that proves the scaffold is wired correctly:
+      at least one passing test, a lint/type-check pass, and a build that produces expected output.
   documenter:
     type: documenter
     model: auto
@@ -48,7 +47,7 @@ agents:
 phases:
   - id: plan-scaffold
     agent: planner
-    objective: Define the full project scaffold including tooling choices, directory layout, and CI configuration.
+    objective: Define the full Node/TypeScript project scaffold including tooling choices, directory layout, and CI configuration.
     outputs:
       - plan.md
       - acceptance.md
@@ -76,7 +75,7 @@ phases:
 
   - id: write-baseline-tests
     agent: test-writer
-    objective: Add baseline tests that confirm the scaffold builds and basic smoke tests pass.
+    objective: Add baseline Vitest tests that confirm the scaffold builds and basic smoke tests pass.
     dependsOn:
       - configure-ci
     inputs:
@@ -104,7 +103,7 @@ phases:
 
 acceptance:
   maxRetries: 2
-  retryPhase: scaffold
+  retryPhase: write-baseline-tests
   criteria:
     - id: install-succeeds
       type: command
