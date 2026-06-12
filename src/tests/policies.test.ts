@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
 import { ApprovalPolicy } from "../policies/approvalPolicy.js";
 import { evaluateCommand, redactSecrets } from "../policies/commandPolicy.js";
 import {
@@ -82,7 +85,12 @@ describe("commandPolicy", () => {
 });
 
 describe("filePolicy", () => {
-  const workspace = "C:\\Projects\\my-app";
+  const workspace = mkdtempSync(join(tmpdir(), "filepolicy-workspace-"));
+  const outsidePath = resolve(workspace, "..", "outside-workspace", "secret.txt");
+
+  afterAll(() => {
+    rmSync(workspace, { recursive: true, force: true });
+  });
 
   describe("normalizePath", () => {
     it("resolves relative paths against workspace root", () => {
@@ -98,7 +106,7 @@ describe("filePolicy", () => {
     });
 
     it("returns false for paths outside workspace", () => {
-      expect(isWithinWorkspace("C:\\Other\\file.txt", workspace)).toBe(false);
+      expect(isWithinWorkspace(outsidePath, workspace)).toBe(false);
     });
   });
 
@@ -109,7 +117,7 @@ describe("filePolicy", () => {
     });
 
     it("blocks paths outside workspace", () => {
-      const result = evaluateFileAccess("C:\\Other\\secret.txt", workspace, "read");
+      const result = evaluateFileAccess(outsidePath, workspace, "read");
       expect(result.verdict).toBe("block");
     });
 

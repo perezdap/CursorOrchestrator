@@ -59,6 +59,24 @@ Write 1–2 sentences focused on **why** the change exists. Examples:
 
 Do not include AI attribution in commits or PR descriptions.
 
+## Continuous integration
+
+GitHub Actions runs on every push and pull request to `main` (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+- `npm ci` on Node.js 20 (Ubuntu)
+- `npm run lint` — TypeScript type-check (`tsc --noEmit`)
+- `npm run build` — compile to `dist/`
+- `npm test` — Vitest unit tests
+- Validate bundled example workflows under `src/examples/`
+
+Run the same checks locally before opening a PR:
+
+```powershell
+npm run lint
+npm run build
+npm test
+```
+
 ## Testing
 
 ```powershell
