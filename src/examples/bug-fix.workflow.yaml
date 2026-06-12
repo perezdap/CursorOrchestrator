@@ -60,9 +60,9 @@ acceptance:
   criteria:
     - id: tests-pass
       type: command
-      command: npm test -- --grep "bug ID or description"
+      command: npm test
       required: true
-    - id: fix-applied
+    - id: diagnosis-ready
       type: markdown_artifact
       path: diagnosis.md
       required: true
