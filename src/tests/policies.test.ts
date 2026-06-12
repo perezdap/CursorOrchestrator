@@ -1,9 +1,14 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { ApprovalPolicy } from "../policies/approvalPolicy.js";
-import { evaluateCommand, redactSecrets } from "../policies/commandPolicy.js";
+import {
+  configureRedaction,
+  evaluateCommand,
+  redactSecrets,
+  redactSecretsDeep,
+} from "../policies/commandPolicy.js";
 import {
   evaluateFileAccess,
   isWithinWorkspace,
@@ -62,6 +67,10 @@ describe("commandPolicy", () => {
   });
 
   describe("redactSecrets", () => {
+    afterEach(() => {
+      configureRedaction({ enabled: true });
+    });
+
     it("redacts GitHub personal access tokens", () => {
       const input = "token=ghp_abcdefghijklmnopqrstuvwxyz1234567890";
       expect(redactSecrets(input)).toBe("token=[REDACTED]");
@@ -80,6 +89,35 @@ describe("commandPolicy", () => {
     it("redacts cursor API keys", () => {
       const input = "cursor_api_key=cursor_abcdefghijklmnop";
       expect(redactSecrets(input)).toContain("[REDACTED]");
+    });
+
+    it("skips redaction when disabled via configureRedaction", () => {
+      const input = "token=ghp_abcdefghijklmnopqrstuvwxyz1234567890";
+      configureRedaction({ enabled: false });
+      expect(redactSecrets(input)).toBe(input);
+    });
+
+    it("skips redaction when disabled per call", () => {
+      const input = "token=ghp_abcdefghijklmnopqrstuvwxyz1234567890";
+      expect(redactSecrets(input, { enabled: false })).toBe(input);
+    });
+  });
+
+  describe("redactSecretsDeep", () => {
+    afterEach(() => {
+      configureRedaction({ enabled: true });
+    });
+
+    it("redacts nested string values", () => {
+      const input = {
+        task: "deploy",
+        config: { apiKey: "api_key=sk-abcdefghijklmnopqrstuvwxyz" },
+        tags: ["Bearer eyJhbGciOiJIUzI1NiJ9"],
+      };
+      const result = redactSecretsDeep(input);
+      expect(result.config.apiKey).toBe("[REDACTED]");
+      expect(result.tags[0]).toBe("[REDACTED]");
+      expect(result.task).toBe("deploy");
     });
   });
 });
@@ -133,6 +171,46 @@ describe("filePolicy", () => {
 
     it("requires approval for .env files", () => {
       const result = evaluateFileAccess(".env", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for .env.local files", () => {
+      const result = evaluateFileAccess(".env.local", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for .envrc files", () => {
+      const result = evaluateFileAccess(".envrc", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for secrets.json", () => {
+      const result = evaluateFileAccess("config/secrets.json", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for credentials.json", () => {
+      const result = evaluateFileAccess("credentials.json", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for .npmrc", () => {
+      const result = evaluateFileAccess(".npmrc", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for private key files", () => {
+      const result = evaluateFileAccess("keys/server.key", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for .ssh directory paths", () => {
+      const result = evaluateFileAccess(".ssh/config", workspace, "read");
+      expect(result.verdict).toBe("require_approval");
+    });
+
+    it("requires approval for secrets directory paths", () => {
+      const result = evaluateFileAccess("config/secrets/vault.txt", workspace, "read");
       expect(result.verdict).toBe("require_approval");
     });
 
