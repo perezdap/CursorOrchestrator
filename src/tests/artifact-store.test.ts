@@ -62,4 +62,13 @@ describe("ArtifactStore", () => {
     const outsidePath = join(workspace, "..", "outside-workspace", "secret.txt");
     expect(() => store.copyExternalToArtifact(outsidePath)).toThrow(/blocked/i);
   });
+
+  it("redacts secrets when writing artifacts", () => {
+    const { store } = createStore();
+    const secret = "ghp_abcdefghijklmnopqrstuvwxyz1234567890";
+    store.writeArtifact("output.md", `token=${secret}`);
+    const content = store.readArtifact("output.md");
+    expect(content).not.toContain(secret);
+    expect(content).toContain("[REDACTED]");
+  });
 });

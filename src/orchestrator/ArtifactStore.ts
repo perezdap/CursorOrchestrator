@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { defaultPolicyGate } from "../policies/PolicyGate.js";
+import { redactSecrets } from "../policies/redactionPolicy.js";
 
 export class ArtifactStore {
   constructor(
@@ -31,7 +32,7 @@ export class ArtifactStore {
 
     const fullPath = join(this.artifactsDir, relativeName);
     mkdirSync(resolve(fullPath, ".."), { recursive: true });
-    writeFileSync(fullPath, content, "utf-8");
+    writeFileSync(fullPath, redactSecrets(content), "utf-8");
     return fullPath;
   }
 

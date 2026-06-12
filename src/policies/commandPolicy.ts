@@ -63,18 +63,10 @@ export function evaluateCommand(
   return { verdict: "allow", reason: "Command permitted by policy" };
 }
 
-const SECRET_PATTERNS = [
-  /cursor_[a-zA-Z0-9_-]{10,}/g,
-  /ghp_[a-zA-Z0-9]{20,}/g,
-  /sk-[a-zA-Z0-9]{20,}/g,
-  /Bearer\s+[a-zA-Z0-9._-]+/gi,
-  /api[_-]?key\s*[:=]\s*["']?[^\s"']+/gi,
-];
-
-export function redactSecrets(text: string): string {
-  let redacted = text;
-  for (const pattern of SECRET_PATTERNS) {
-    redacted = redacted.replace(pattern, "[REDACTED]");
-  }
-  return redacted;
-}
+export {
+  configureRedaction,
+  getRedactionOptions,
+  redactSecrets,
+  redactSecretsDeep,
+  type RedactionOptions,
+} from "./redactionPolicy.js";

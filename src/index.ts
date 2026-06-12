@@ -73,7 +73,14 @@ export { MockAgentRunner } from "./runners/mockRunner.js";
 
 export { builtInAgentDefinitions, builtInAgentModules } from "./agents/index.js";
 
-export { evaluateCommand, redactSecrets } from "./policies/commandPolicy.js";
+export {
+  evaluateCommand,
+  redactSecrets,
+  redactSecretsDeep,
+  configureRedaction,
+  getRedactionOptions,
+  type RedactionOptions,
+} from "./policies/commandPolicy.js";
 export { evaluateFileAccess, isWithinWorkspace } from "./policies/filePolicy.js";
 export { ApprovalPolicy } from "./policies/approvalPolicy.js";
 export {
