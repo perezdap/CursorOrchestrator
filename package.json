@@ -10,8 +10,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run --exclude src/tests/sdk/**",
+    "test:fast": "vitest run --exclude src/tests/sdk/**",
+    "test:full": "vitest run",
+    "test:sdk": "vitest run src/tests/sdk",
+    "test:watch": "vitest --exclude src/tests/sdk/**",
     "dev": "tsx src/cli.ts",
     "validate": "tsx src/cli.ts validate",
     "lint": "tsc --noEmit"
