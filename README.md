@@ -57,7 +57,36 @@ Copy-Item .\workflows\generic-task.workflow.yaml .\workflows\my-task.workflow.ya
 orchestrator validate --workflow .\workflows\my-task.workflow.yaml
 ```
 
-See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/` (for example `winget-psadt-package.workflow.yaml` for Windows packaging).
+See [docs/workflows.md](docs/workflows.md) for the full schema.
+
+## Example workflows
+
+`src/examples/` ships 10 ready-to-use workflow templates:
+
+| File | Use case |
+|------|----------|
+| `generic-task.workflow.yaml` | Plan → implement → review → verify |
+| `bug-fix.workflow.yaml` | Diagnose, fix, test, and verify a reported bug |
+| `new-react-component.workflow.yaml` | Design, implement, test, and document a React component |
+| `tdd-feature.workflow.yaml` | TDD flow: test-writer runs before implementer |
+| `safe-refactor.workflow.yaml` | Behaviour-preserving refactor with review gates |
+| `project-setup.workflow.yaml` | Scaffold, CI, tests, and docs for a new project |
+| `security-audit.workflow.yaml` | Dependency scan, static audit, remediation, report |
+| `api-integration.workflow.yaml` | Plan, implement, test, review, and document an API client |
+| `winget-psadt-package.workflow.yaml` | Windows packaging with Pester |
+| `repo-review.workflow.yaml` | Research and review pipeline |
+
+Validate any example before running:
+
+```powershell
+orchestrator validate --workflow .\src\examples\tdd-feature.workflow.yaml
+```
+
+To use one as a starting point for your own workflow:
+
+```powershell
+Copy-Item .\src\examples\tdd-feature.workflow.yaml .\workflows\my-feature.workflow.yaml
+```
 
 ## Run a workflow
 

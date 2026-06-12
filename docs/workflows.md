@@ -60,6 +60,11 @@ acceptance:
 | `generic-task.workflow.yaml` | Plan → implement → review → verify |
 | `bug-fix.workflow.yaml` | Diagnose, fix, test, and verify a bug |
 | `new-react-component.workflow.yaml` | Design, implement, test, and document a React component |
+| `tdd-feature.workflow.yaml` | TDD: test-writer runs before implementer, retryPhase on failure |
+| `safe-refactor.workflow.yaml` | Behaviour-preserving refactor with characterisation tests and review gates |
+| `project-setup.workflow.yaml` | Scaffold, CI, tests, and docs for a new project |
+| `security-audit.workflow.yaml` | Dependency scan, static audit, remediation plan, executive report |
+| `api-integration.workflow.yaml` | Plan, implement, test, review, and document a third-party API client |
 | `winget-psadt-package.workflow.yaml` | Windows packaging with Pester |
 | `repo-review.workflow.yaml` | Research and review pipeline |
 
