@@ -80,16 +80,36 @@ npm test
 ## Testing
 
 ```powershell
-npm test               # all Vitest tests
+npm test               # fast suite (no live Cursor SDK calls)
+npm run test:fast      # same as npm test
+npm run test:full      # all tests, including SDK integration
+npm run test:sdk       # only tests tagged `sdk` (live Cursor API)
 npm run lint           # TypeScript type-check
 npm run build          # compile check
 ```
 
+### Fast vs full test runs
+
+| Command | `CURSOR_API_KEY` | What runs |
+|---------|------------------|-----------|
+| `npm test` / `npm run test:fast` | Not required | Unit and integration tests using `MockAgentRunner` |
+| `npm run test:full` | Required for SDK tests | Fast suite plus live SDK integration tests |
+| `npm run test:sdk` | Required | Only live SDK tests under `src/tests/sdk/` |
+
+The default `npm test` excludes `src/tests/sdk/` so CI and local development stay fast and deterministic. Unit tests for Cursor runners (no live API) live in `src/tests/cursor-runner.test.ts`; live SDK integration tests live in `src/tests/sdk/`.
+
+Shared test helpers under `src/tests/helpers/` provide isolated Orchestrator instances:
+
+- `createTestOrchestrator()` — wires `MockAgentRunner`, permissive shell policy, and auto-approved manual checks.
+- `configureMockRunnerForWorkflowPhases()` — seeds phase responses for workflow runs.
+- `createTempCwd()` — temp workspace with automatic cleanup via `vitest.setup.ts`.
+
 When adding features:
 
 - **Schemas** — add validation tests in `src/tests/*.schema.test.ts` or adjacent test files.
-- **Orchestrator behavior** — test with `MockAgentRunner`, not live SDK calls.
+- **Orchestrator behavior** — use `createTestOrchestrator()` and `MockAgentRunner`; do not call the live SDK in the default suite.
 - **Acceptance checks** — cover new check types in `acceptance-runner.test.ts`.
+- **Live SDK coverage** — add tests under `src/tests/sdk/` and run with `npm run test:sdk` or `npm run test:full`.
 
 Validate example workflows still parse:
 

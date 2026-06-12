@@ -1,17 +1,20 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ApprovalPolicy } from "../policies/approvalPolicy.js";
 import { AgentRegistry } from "../orchestrator/AgentRegistry.js";
 import { AcceptanceRunner } from "../orchestrator/AcceptanceRunner.js";
-import { Orchestrator } from "../orchestrator/Orchestrator.js";
 import { CloudRepoUrlRequiredError } from "../util/resolveRepoUrl.js";
 import { TaskGraph } from "../orchestrator/TaskGraph.js";
-import { MockAgentRunner } from "../runners/mockRunner.js";
 import { NodeShellRunner } from "../runners/shellRunner.js";
 import { validateWorkflow } from "../schemas/workflow.schema.js";
+import {
+  configureMockRunnerForPhases,
+  configureMockRunnerForWorkflowPhases,
+} from "./helpers/mockAgentRunner.js";
+import { createTempCwd } from "./helpers/tempDirs.js";
+import { createTestOrchestrator } from "./helpers/testOrchestrator.js";
 
 const testWorkflow = validateWorkflow({
   name: "mock-workflow",
@@ -72,21 +75,6 @@ const testWorkflow = validateWorkflow({
   },
 });
 
-let tempDirs: string[] = [];
-
-afterEach(() => {
-  for (const dir of tempDirs) {
-    rmSync(dir, { recursive: true, force: true });
-  }
-  tempDirs = [];
-});
-
-function createTempCwd(): string {
-  const dir = mkdtempSync(join(tmpdir(), "orchestrator-test-"));
-  tempDirs.push(dir);
-  return dir;
-}
-
 describe("TaskGraph", () => {
   it("orders phases by dependencies", () => {
     const graph = new TaskGraph(testWorkflow.phases);
@@ -144,12 +132,7 @@ describe("AcceptanceRunner", () => {
 
 describe("Orchestrator", () => {
   it("throws when cloud mode has no resolvable repository URL", async () => {
-    const cwd = createTempCwd();
-    const orchestrator = new Orchestrator({
-      cwd,
-      executionMode: "cloud",
-      agentRunner: new MockAgentRunner(),
-    });
+    const { orchestrator, cwd } = createTestOrchestrator({ executionMode: "cloud" });
 
     await expect(
       orchestrator.run({
@@ -168,29 +151,14 @@ describe("Orchestrator", () => {
       { cwd },
     );
 
-    const mockRunner = new MockAgentRunner();
-    for (const phase of testWorkflow.phases) {
-      mockRunner.setResponse(phase.id, {
-        phaseId: phase.id,
-        result: `Completed ${phase.id}`,
-        success: true,
-        artifacts:
-          phase.id === "intake"
-            ? {
-                "plan.md": "# Plan\n\nTest plan for mock workflow.",
-                "acceptance.md": "# Acceptance\n\n- Tests pass",
-              }
-            : undefined,
-      });
-    }
-
-    const orchestrator = new Orchestrator({
+    const { orchestrator, mockRunner } = createTestOrchestrator({
       cwd,
       executionMode: "cloud",
-      agentRunner: mockRunner,
-      approvalPolicy: new ApprovalPolicy({ autoApproveInTests: true, autoApproveManualChecks: true }),
-      shellRunner: new NodeShellRunner({ enforcePolicy: false }),
     });
+    configureMockRunnerForWorkflowPhases(
+      mockRunner,
+      testWorkflow.phases.map((p) => p.id),
+    );
 
     const result = await orchestrator.run({
       workflow: testWorkflow,
@@ -202,30 +170,11 @@ describe("Orchestrator", () => {
   });
 
   it("completes a full workflow with mocked agent runner", async () => {
-    const cwd = createTempCwd();
-    const mockRunner = new MockAgentRunner();
-
-    for (const phase of testWorkflow.phases) {
-      mockRunner.setResponse(phase.id, {
-        phaseId: phase.id,
-        result: `Completed ${phase.id}`,
-        success: true,
-        artifacts:
-          phase.id === "intake"
-            ? {
-                "plan.md": "# Plan\n\nTest plan for mock workflow.",
-                "acceptance.md": "# Acceptance\n\n- Tests pass",
-              }
-            : undefined,
-      });
-    }
-
-    const orchestrator = new Orchestrator({
-      cwd,
-      agentRunner: mockRunner,
-      approvalPolicy: new ApprovalPolicy({ autoApproveInTests: true, autoApproveManualChecks: true }),
-      shellRunner: new NodeShellRunner({ enforcePolicy: false }),
-    });
+    const { orchestrator, cwd, mockRunner } = createTestOrchestrator();
+    configureMockRunnerForWorkflowPhases(
+      mockRunner,
+      testWorkflow.phases.map((p) => p.id),
+    );
 
     const result = await orchestrator.run({
       workflow: testWorkflow,
@@ -251,20 +200,17 @@ describe("Orchestrator", () => {
   });
 
   it("retries acceptance when criteria fail initially", async () => {
-    const cwd = createTempCwd();
-    const mockRunner = new MockAgentRunner();
-
-    for (const phase of testWorkflow.phases) {
-      mockRunner.setResponse(phase.id, {
-        phaseId: phase.id,
-        result: `Done ${phase.id}`,
-        success: true,
+    const { orchestrator, cwd, mockRunner } = createTestOrchestrator();
+    configureMockRunnerForPhases(
+      mockRunner,
+      testWorkflow.phases.map((p) => ({
+        id: p.id,
         artifacts:
-          phase.id === "intake"
+          p.id === "intake"
             ? { "plan.md": "# Plan\n\nRetry test plan." }
             : undefined,
-      });
-    }
+      })),
+    );
 
     let callCount = 0;
     const shellRunner = new NodeShellRunner({ enforcePolicy: false });
@@ -297,13 +243,14 @@ describe("Orchestrator", () => {
       },
     });
 
-    const orchestrator = new Orchestrator({
+    const retryOrchestrator = createTestOrchestrator({
       cwd,
       agentRunner: mockRunner,
       shellRunner,
-    });
+      approvalPolicy: new ApprovalPolicy(),
+    }).orchestrator;
 
-    const result = await orchestrator.run({
+    const result = await retryOrchestrator.run({
       workflow: workflowWithRetry,
       inputs: { task: "Retry test", repoPath: cwd },
     });

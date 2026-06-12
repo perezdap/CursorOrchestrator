@@ -1,12 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { describe, expect, it } from "vitest";
 import { ConsoleRunProgress } from "../orchestrator/RunProgress.js";
-import { Orchestrator } from "../orchestrator/Orchestrator.js";
-import { MockAgentRunner } from "../runners/mockRunner.js";
 import { validateWorkflow } from "../schemas/workflow.schema.js";
 import type { RunProgressReporter } from "../orchestrator/RunProgress.js";
+import { createTestOrchestrator } from "./helpers/testOrchestrator.js";
 
 describe("ConsoleRunProgress", () => {
   it("writes status lines to the provided stream", () => {
@@ -68,32 +64,21 @@ describe("Orchestrator progress", () => {
       workflowFinished: () => events.push("workflowFinished"),
     };
 
-    const mockRunner = new MockAgentRunner();
+    const { orchestrator, cwd, mockRunner } = createTestOrchestrator({ progress });
     mockRunner.setResponse("plan", {
       phaseId: "plan",
       result: "done",
       success: true,
     });
 
-    const cwd = mkdtempSync(join(tmpdir(), "progress-test-"));
-    try {
-      const orchestrator = new Orchestrator({
-        cwd,
-        agentRunner: mockRunner,
-        progress,
-      });
+    await orchestrator.run({
+      workflow,
+      inputs: { task: "test", repoPath: cwd },
+    });
 
-      await orchestrator.run({
-        workflow,
-        inputs: { task: "test", repoPath: cwd },
-      });
-
-      expect(events).toContain("workflowStarted");
-      expect(events).toContain("phaseStarted");
-      expect(events).toContain("phaseFinished");
-      expect(events).toContain("workflowFinished");
-    } finally {
-      rmSync(cwd, { recursive: true, force: true });
-    }
+    expect(events).toContain("workflowStarted");
+    expect(events).toContain("phaseStarted");
+    expect(events).toContain("phaseFinished");
+    expect(events).toContain("workflowFinished");
   });
 });
