@@ -5,6 +5,7 @@ import type { AgentRunner } from "../runners/types.js";
 import { mergeSkillIds } from "../skills/mergeSkillIds.js";
 import { SkillResolver } from "../skills/SkillResolver.js";
 import type { ArtifactStore } from "./ArtifactStore.js";
+import { createPhaseFailure, type RunFailure } from "./RunErrors.js";
 import type { RunState } from "./RunState.js";
 
 export interface PhaseRunnerOptions {
@@ -23,6 +24,7 @@ export interface PhaseRunOutcome {
   phaseId: string;
   result?: string;
   error?: string;
+  failure?: RunFailure;
   artifacts: string[];
 }
 
@@ -79,22 +81,42 @@ export class PhaseRunner {
         skills,
       });
 
-      const result = await runner.run({
-        agentId: phase.agent,
-        agentConfig,
-        prompt,
-        cwd: this.options.cwd,
-        executionMode,
-        runId: this.options.runState.runId,
-        phaseId: phase.id,
-        artifactsDir,
-        context: {
-          ...this.options.taskContext,
-          ...(phase.context ?? {}),
-        },
-        apiKey: this.options.apiKey,
-        skills,
-      });
+      let result;
+      try {
+        result = await runner.run({
+          agentId: phase.agent,
+          agentConfig,
+          prompt,
+          cwd: this.options.cwd,
+          executionMode,
+          runId: this.options.runState.runId,
+          phaseId: phase.id,
+          artifactsDir,
+          context: {
+            ...this.options.taskContext,
+            ...(phase.context ?? {}),
+          },
+          apiKey: this.options.apiKey,
+          skills,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        record.status = "failed";
+        record.error = message;
+        record.completedAt = new Date().toISOString();
+        this.options.runState.updatePhase(phase.id, record);
+        this.options.runState.appendPhaseLog(
+          `Phase **${phase.id}** raised an exception: ${message}`,
+        );
+        const failure = createPhaseFailure("agent_exception", phase.id, message);
+        return {
+          success: false,
+          phaseId: phase.id,
+          error: message,
+          failure,
+          artifacts: [],
+        };
+      }
 
       if (result.agentSessionId) {
         this.options.runState.setAgentSession(phase.id, result.agentSessionId);
@@ -144,7 +166,17 @@ export class PhaseRunner {
       );
 
       if (attempt > maxRetries) {
-        return this.handleExhaustedRetries(phase, record, result.error, artifactNames);
+        return this.handleExhaustedRetries(
+          phase,
+          record,
+          result.error,
+          artifactNames,
+          createPhaseFailure(
+            "agent_execution",
+            phase.id,
+            result.error ?? "Agent execution failed",
+          ),
+        );
       }
     }
 
@@ -156,6 +188,7 @@ export class PhaseRunner {
     record: ReturnType<RunState["getPhaseRecord"]>,
     error: string | undefined,
     artifactNames: string[],
+    failure: RunFailure,
   ): PhaseRunOutcome {
     const onFailure = phase.onFailure ?? "stop";
     record.completedAt = new Date().toISOString();
@@ -187,6 +220,7 @@ export class PhaseRunner {
           success: false,
           phaseId: phase.id,
           error,
+          failure,
           artifacts: artifactNames,
         };
       default: {
@@ -197,6 +231,7 @@ export class PhaseRunner {
           success: false,
           phaseId: phase.id,
           error: error ?? `Unhandled onFailure: ${String(_exhaustive)}`,
+          failure,
           artifacts: artifactNames,
         };
       }

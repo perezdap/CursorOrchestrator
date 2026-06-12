@@ -16,6 +16,7 @@ Guide to Cursor Orchestrator documentation.
 | Document | Description |
 |----------|-------------|
 | [architecture.md](architecture.md) | Components, data flow, extension points |
+| [error-recovery.md](error-recovery.md) | Failure classification, partial progress, resume |
 | [workflows.md](workflows.md) | Workflow YAML schema and phase fields |
 | [agents.md](agents.md) | Built-in agent types and configuration |
 | [acceptance-criteria.md](acceptance-criteria.md) | Check types, retries, reports |

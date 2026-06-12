@@ -16,6 +16,20 @@ export { runCursorAgent } from "./runners/cursorRunnerCore.js";
 export { ArtifactStore } from "./orchestrator/ArtifactStore.js";
 export { RunState, generateRunId } from "./orchestrator/RunState.js";
 export {
+  createPhaseFailure,
+  createWorkflowFailure,
+  formatRunFailure,
+  failureMessage,
+  type RunFailure,
+  type RunFailureKind,
+  type RunFailureScope,
+} from "./orchestrator/RunErrors.js";
+export {
+  prepareRunForResume,
+  logPartialResults,
+  type ResumeRecoverySummary,
+} from "./orchestrator/RunRecovery.js";
+export {
   ConsoleRunProgress,
   noopRunProgress,
   startHeartbeat,
