@@ -185,6 +185,60 @@ const orchestrator = new Orchestrator({
 
 See [docs/architecture.md](docs/architecture.md).
 
+## Programmatic usage
+
+Use the library API directly when embedding orchestration in scripts, tests, or services. The bundled example runs a minimal workflow with `MockAgentRunner` — no `CURSOR_API_KEY` required.
+
+```powershell
+npm run example:programmatic
+```
+
+Source: [`src/examples/programmatic-usage.example.ts`](src/examples/programmatic-usage.example.ts) (workflow: [`programmatic-usage.workflow.yaml`](src/examples/programmatic-usage.workflow.yaml)).
+
+The example demonstrates:
+
+- Loading a workflow with `parseWorkflowFile`
+- Creating an `Orchestrator` with `MockAgentRunner`, `ApprovalPolicy`, and `NodeShellRunner`
+- Calling `orchestrator.run()` and inspecting `RunWorkflowResult`
+- Reading run artifacts under `.runs/<run-id>/`
+
+Minimal pattern:
+
+```typescript
+import {
+  ApprovalPolicy,
+  MockAgentRunner,
+  NodeShellRunner,
+  Orchestrator,
+  parseWorkflowFile,
+} from "cursor-orchestrator";
+
+const workflow = parseWorkflowFile("./workflows/my-task.workflow.yaml");
+const mockRunner = new MockAgentRunner();
+mockRunner.setResponse("plan", {
+  phaseId: "plan",
+  result: "Done",
+  artifacts: { "plan.md": "# Plan\n" },
+});
+
+const orchestrator = new Orchestrator({
+  agentRunner: mockRunner,
+  approvalPolicy: new ApprovalPolicy({ autoApproveManualChecks: true }),
+  shellRunner: new NodeShellRunner({ enforcePolicy: false }),
+});
+
+const result = await orchestrator.run({
+  workflow,
+  inputs: { task: "My task", repoPath: process.cwd() },
+});
+
+console.log(result.status, result.runDir);
+```
+
+For live Cursor agents, omit `agentRunner` (defaults to `CursorLocalRunner`) and set `CURSOR_API_KEY`.
+
+Validation: `npm test` includes `programmatic-usage.example.test.ts`; run `npm run example:programmatic` for a manual smoke check.
+
 ## Development
 
 ```powershell
