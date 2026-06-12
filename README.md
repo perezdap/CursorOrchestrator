@@ -154,6 +154,17 @@ Extend `acceptanceCheckSchema` in `src/schemas/acceptance.schema.ts` and add a h
 
 See [docs/acceptance-criteria.md](docs/acceptance-criteria.md).
 
+## Architecture diagrams
+
+High-level Mermaid diagrams live in [docs/architecture.md](docs/architecture.md):
+
+- **Component map** — modules and dependencies (CLI through runners and policies)
+- **Run lifecycle** — `Orchestrator` → `Run` → `PhaseExecutor` → `PhaseRunner` → `AcceptanceGate`
+- **Phase dependency execution** — `dependsOn` ordering, resume skips, and the phase loop
+- **Persistence and runner selection** — `.runs/<run-id>/` layout and local vs cloud `AgentRunner` wiring
+
+Update those diagrams when you change orchestrator flow or persistence in the same PR.
+
 ## Cursor SDK integration
 
 The orchestrator depends on the `AgentRunner` interface, not the SDK directly:

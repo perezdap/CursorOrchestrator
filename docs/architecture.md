@@ -4,6 +4,10 @@
 
 Cursor Orchestrator separates **workflow definition**, **execution**, **acceptance**, and **persistence** into small modules. The Cursor SDK is only used inside runner implementations.
 
+> **Keeping diagrams current:** When you change orchestrator flow, `dependsOn` ordering, persistence layout, or runner wiring, update the Mermaid diagrams in this document in the same PR. The [component map](#component-map) is the canonical high-level view; the [run lifecycle](#run-lifecycle), [phase dependency execution](#phase-dependency-execution), and [persistence and runner selection](#persistence-and-runner-selection) sections drill into specific paths.
+
+### Component map
+
 ```mermaid
 flowchart TB
   CLI[CLI] --> Orch[Orchestrator]
@@ -28,6 +32,120 @@ flowchart TB
   PR --> AS[ArtifactStore]
   AS --> PG
   Shell --> PG
+```
+
+### Run lifecycle
+
+From `Orchestrator.run()` through per-phase work and workflow-level acceptance. `PhaseExecutor` is the seam between agent execution and phase-level checks; `Run` owns the outer loop and final workflow acceptance.
+
+```mermaid
+sequenceDiagram
+  participant CLI
+  participant Orch as Orchestrator
+  participant TG as TaskGraph
+  participant Run
+  participant PE as PhaseExecutor
+  participant PR as PhaseRunner
+  participant AG as AcceptanceGate
+  participant RS as RunState
+
+  CLI->>Orch: run(workflow, inputs)
+  Orch->>RS: createNew or load (resume)
+  Orch->>TG: getExecutionOrder()
+  Orch->>Run: execute(workflow, order)
+
+  loop Each phase in dependency order
+    Run->>RS: skip if completed/skipped
+    Run->>PE: executePhase(phase)
+    PE->>PR: runPhase(phase, agent)
+    PR->>RS: updatePhase, appendPhaseLog, saveAgentMessage
+    alt phase.acceptance declared
+      PE->>AG: evaluate(criteria, maxRetries)
+      AG->>RS: writeAcceptanceReport
+    end
+    PE-->>Run: success / failure
+    Run-->>Run: failRun on phase failure
+  end
+
+  opt workflow.acceptance declared
+    Run->>AG: evaluate(workflow criteria)
+    AG->>RS: writeAcceptanceReport
+    opt retryPhase on failure
+      Run->>PR: runPhase(retryPhase)
+    end
+  end
+
+  Run->>RS: setStatus, writeFinalReport
+  Run-->>CLI: RunWorkflowResult
+```
+
+### Phase dependency execution
+
+`TaskGraph` builds execution order from each phase's `dependsOn` using depth-first topological sort. Cycles are rejected at workflow validation and again at runtime. On resume, `Run` skips phases already marked `completed` or `skipped`.
+
+```mermaid
+flowchart LR
+  subgraph workflow["Workflow phases"]
+    intake[intake]
+    plan[plan]
+    impl[implement]
+    review[review]
+    verify[verify]
+  end
+
+  intake --> plan
+  plan --> impl
+  impl --> review
+  review --> verify
+
+  TG[TaskGraph.getExecutionOrder] --> order["[intake, plan, implement, review, verify]"]
+
+  workflow --> TG
+
+  order --> loop{For each phase}
+  loop --> skip{completed or skipped?}
+  skip -->|yes| loop
+  skip -->|no| exec[PhaseExecutor.executePhase]
+  exec --> loop
+  loop -->|done| wfAcc[Workflow acceptance optional]
+```
+
+### Persistence and runner selection
+
+`RunState` is the facade callers use; `RunRecord` holds in-memory phase status and sessions; `RunArchive` writes the `.runs/<run-id>/` tree. `Orchestrator.getRunner(mode)` selects the agent adapter — the core never imports `@cursor/sdk`.
+
+```mermaid
+flowchart TB
+  subgraph persist["State and artifacts"]
+    RS[RunState]
+    RR[RunRecord]
+    RA[RunArchive]
+    RS --> RR
+    RS --> RA
+    RA --> dir[".runs/{run-id}/"]
+    dir --> sj[state.json]
+    dir --> pl[phase-log.md]
+    dir --> am[agent-messages/]
+    dir --> art[artifacts/]
+    dir --> ar[acceptance-report.*]
+    dir --> fr[final-report.md]
+    PR2[PhaseRunner] --> RS
+    PR2 --> AS[ArtifactStore]
+    AS --> art
+  end
+
+  subgraph runners["AgentRunner selection"]
+    Orch2[Orchestrator.getRunner]
+    Orch2 --> override{overrideRunner set?}
+    override -->|yes| mock[MockAgentRunner or custom]
+    override -->|no| mode{executionMode}
+    mode -->|local| local[CursorLocalRunner]
+    mode -->|cloud| cloud[CursorCloudRunner]
+    local --> core[cursorRunnerCore]
+    cloud --> core
+    PR2 --> Orch2
+    AR2[AcceptanceRunner] --> Orch2
+  end
 ```
 
 ## Core components
