@@ -162,6 +162,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
 | [docs/agents.md](docs/agents.md) | Workflow authors | Agent configuration |
 | [docs/acceptance-criteria.md](docs/acceptance-criteria.md) | Workflow authors | Check types and retries |
 | [docs/windows-first.md](docs/windows-first.md) | Contributors | Platform defaults |
+| [docs/security.md](docs/security.md) | Operators | Cloud threat model, policies, execution modes |
 
 When changing behavior, update the relevant doc in the same PR.
 

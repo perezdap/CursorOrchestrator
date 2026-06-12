@@ -1,3 +1,7 @@
+/**
+ * Cursor cloud agent runner — agents execute on Cursor-hosted VMs against a GitHub clone.
+ * Security: see docs/security.md (threat model, repo URL validation, cloud vs local).
+ */
 import type { AgentOptions } from "@cursor/sdk";
 import { runCursorAgent } from "./cursorRunnerCore.js";
 import type { AgentRunner, AgentRunInput, AgentRunResult } from "./types.js";

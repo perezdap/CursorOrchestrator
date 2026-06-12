@@ -19,6 +19,7 @@ Guide to Cursor Orchestrator documentation.
 | [workflows.md](workflows.md) | Workflow YAML schema and phase fields |
 | [agents.md](agents.md) | Built-in agent types and configuration |
 | [acceptance-criteria.md](acceptance-criteria.md) | Check types, retries, reports |
+| [security.md](security.md) | Cloud threat model, policies, execution mode guidance |
 
 ## Platform
 
