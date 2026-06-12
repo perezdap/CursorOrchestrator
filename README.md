@@ -1,14 +1,9 @@
-## Examples
+# CursorOrchestrator  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![GitHub stars](https://img.shields.io/github/stars/perezdap/CursorOrchestrator.svg)](https://github.com/perezdap/CursorOrchestrator/stargazers) [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)  
 
-See `src/examples/` for ready-to-use workflows:
+**Windows-first multi-phase orchestrator for Cursor + AI agents.** 
 
-- generic-task.workflow.yaml
-- repo-review.workflow.yaml
-- winget-psadt-package.workflow.yaml
-- setup-dev-env.workflow.yaml
-- full-feature-implementation.workflow.yaml
-- bugfix-workflow.yaml
-- api-backend.yaml
-- deployment.yaml
+[Quick Start](#-quick-start-under-60-seconds) | [Examples](src/examples/) | [Docs](docs/)
 
-More coming soon! Switch to `add-more-example-workflows` branch to try the latest.
+## 🚀 Quick Start (under 60 seconds)
+
+... (rest of the improved content remains)
