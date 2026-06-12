@@ -57,7 +57,40 @@ Copy-Item .\workflows\generic-task.workflow.yaml .\workflows\my-task.workflow.ya
 orchestrator validate --workflow .\workflows\my-task.workflow.yaml
 ```
 
-See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/` (for example `winget-psadt-package.workflow.yaml` for Windows packaging).
+See [docs/workflows.md](docs/workflows.md) for the full schema. The orchestrator package also ships example workflows you can copy from `node_modules/cursor-orchestrator/src/examples/`.
+
+## Example Workflows
+
+Ready-to-use workflow templates are in [`src/examples/`](src/examples/). Copy any of them to your `workflows/` folder and customise as needed.
+
+| File | Use case | Key phases |
+|------|----------|------------|
+| [`generic-task.workflow.yaml`](src/examples/generic-task.workflow.yaml) | General-purpose plan → implement → review → verify pipeline | intake, implement, review, verify |
+| [`bug-fix.workflow.yaml`](src/examples/bug-fix.workflow.yaml) | Diagnose, fix, test, and review a reported bug | diagnose, implement-fix, add-tests, review |
+| [`new-react-component.workflow.yaml`](src/examples/new-react-component.workflow.yaml) | Design, implement, test, and document a React component | design, implement, test, document |
+| [`security-audit.workflow.yaml`](src/examples/security-audit.workflow.yaml) | Dependency scan, static audit, remediation plan, and executive report | survey, static-audit, remediation-plan, report |
+| [`api-integration.workflow.yaml`](src/examples/api-integration.workflow.yaml) | Plan, implement, test, review, and document a third-party API client | plan, implement, test, review, document |
+| [`repo-review.workflow.yaml`](src/examples/repo-review.workflow.yaml) | Research, code review, security audit, and documentation gap analysis | research, code-review, security-review, document |
+| [`winget-psadt-package.workflow.yaml`](src/examples/winget-psadt-package.workflow.yaml) | Windows packaging with winget manifests, PSADT scripts, and Pester tests | plan-packaging, implement-scripts, write-tests, release-prep |
+
+### Quick start with an example
+
+```powershell
+# Validate a workflow before running
+orchestrator validate --workflow .\src\examples\security-audit.workflow.yaml
+
+# Run the bug-fix workflow
+orchestrator run `
+  --workflow .\src\examples\bug-fix.workflow.yaml `
+  --input bugDescription="Login button throws NullReferenceException on submit" `
+  --repo-path .
+
+# Run the API integration workflow
+orchestrator run `
+  --workflow .\src\examples\api-integration.workflow.yaml `
+  --input apiName="Stripe" `
+  --repo-path .
+```
 
 ## Run a workflow
 
