@@ -60,7 +60,7 @@ acceptance:
   criteria:
     - id: tests-pass
       type: command
-      command: npm test -- --testPathPattern=NewComponent
+      command: npm test -- src/components/NewComponent
       required: true
     - id: component-exists
       type: file_exists
