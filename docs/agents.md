@@ -101,6 +101,8 @@ No orchestrator changes required.
 
 Cloud runs require a **GitHub** repository URL. `Orchestrator.run()` resolves `repoUrl` from run inputs or auto-detects `origin` from `repoPath` when `executionMode` is `cloud`; the CLI passes `--repo-url` through as `repoUrl`. Non-GitHub remotes are rejected. The resolved URL is passed to agents as `repoUrl` in run context for `cloud.repos`.
 
+See [security.md](security.md) for threat model and when to choose cloud vs local.
+
 ## Agent messages and artifacts
 
 Each phase stores:

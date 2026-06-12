@@ -88,7 +88,28 @@ orchestrator run `
 
 Progress lines print to stderr by default (`[orchestrator] [1/4] Phase intake … running`). Use `--quiet` to suppress them.
 
-Cloud agents run against a **GitHub** repository URL (`--repo-url` or auto-detected `origin`), not your local folder. Acceptance checks still use `--repo-path`. See [Cloud execution](docs/getting-started.md#cloud-execution).
+### Execution modes
+
+| Mode | Flag | Agent runs on | Source of truth for agent work |
+|------|------|---------------|--------------------------------|
+| **Local** (default) | `--execution-mode local` | Your machine (`--repo-path`) | Local checkout |
+| **Cloud** | `--execution-mode cloud` | Cursor-hosted VM | GitHub repo (`--repo-url` or auto-detected `origin`) |
+
+In **cloud** mode, agents clone and edit the remote GitHub repository—not your local folder. Push your branch before running; pull locally before acceptance checks pass. Acceptance checks (`npm test`, Pester, etc.) always run against `--repo-path`.
+
+```powershell
+# Local (default) — best for sensitive or uncommitted work
+orchestrator run --workflow .\workflows\my-task.workflow.yaml --task "..." --repo-path .
+
+# Cloud — best when work is on GitHub and you want remote agent compute
+orchestrator run `
+  --workflow .\workflows\my-task.workflow.yaml `
+  --task "..." `
+  --repo-path . `
+  --execution-mode cloud
+```
+
+Use `--dry-run` or `MockAgentRunner` in CI when you should not call the Cursor API. See [Cloud execution](docs/getting-started.md#cloud-execution) for setup and [Security](docs/security.md) for threat model and operator guidance.
 
 Resume a run:
 
@@ -171,6 +192,7 @@ npm run dev -- validate --workflow .\src\examples\generic-task.workflow.yaml
 **Deep dives**
 
 - [Architecture](docs/architecture.md)
+- [Security](docs/security.md) — cloud threat model, policies, execution mode guidance
 - [Workflows](docs/workflows.md)
 - [Agents](docs/agents.md)
 - [Acceptance criteria](docs/acceptance-criteria.md)

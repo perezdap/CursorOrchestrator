@@ -88,6 +88,8 @@ The orchestrator calls `getRunner(mode)` — never imports `@cursor/sdk` directl
 
 Before phases start, `Orchestrator.run()` resolves a GitHub `repoUrl` when `executionMode` is `cloud` (`src/util/resolveRepoUrl.ts`). CLI and library callers share this path; cloud runs fail fast when no URL can be resolved.
 
+For threat model, cloud vs local guidance, and policy scope, see [security.md](security.md).
+
 ## Extension points
 
 | Extend | Location |
@@ -108,3 +110,5 @@ Before phases start, `Orchestrator.run()` resolves a GitHub `repoUrl` when `exec
 - `filePolicy` prevents access outside workspace root
 - `approvalPolicy` gates deletions, pushes, secrets, and manual checks
 - `redactSecrets` scrubs common token patterns from logs
+
+These policies primarily guard **local** acceptance checks and orchestrator artifact I/O. Cloud agents run under Cursor SDK isolation; see [security.md](security.md) for the full threat model and operator checklist.
